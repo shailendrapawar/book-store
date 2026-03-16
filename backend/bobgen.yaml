@@ -1,0 +1,16 @@
+psql:
+  dsn: "postgres://postgres:uk04ac2006@localhost:5432/book_store?sslmode=disable"
+
+plugins:
+  dbinfo:
+    destination: internal/db/dbinfo
+    pkgname: dbinfo
+  models:
+    destination: internal/db/models
+    pkgname: models
+  factory:
+    destination: internal/db/factory
+    pkgname: factory
+  dberrors:
+    destination: internal/db/dberrors
+    pkgname: dberrors

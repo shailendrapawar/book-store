@@ -1,0 +1,35 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API for Folio Bookstore
+  title: Folio Bookstore API
+  version: "1.0"
+paths:
+  /api/v1/users/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration details
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Register a new user
+      tags:
+      - users
+swagger: "2.0"
