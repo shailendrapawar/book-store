@@ -8,11 +8,12 @@ import (
 )
 
 func UserRoutes(r *gin.RouterGroup, db *sql.DB) {
+
 	userRouter := r.Group("/users")
 
 	//init controller with passing db
 	userController := controllers.NewUserController(db)
 
-	userRouter.GET("/register", userController.Register)
+	userRouter.POST("/register", userController.Register)
 
 }

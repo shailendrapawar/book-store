@@ -4,7 +4,9 @@ import (
 	"database/sql"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/services"
+	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
 type UserController interface {
@@ -26,13 +28,25 @@ func NewUserController(db *sql.DB) UserController {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        body  body  object  true  "User registration details"
-// @Success      201   {object}  object
+// @Param        body  body  adapters.RegisterRequest  true  "Register payload"
+// @Success      201   {object}  adapters.User
 // @Failure      400   {object}  object
+// @Failure      500   {object}  object
 // @Router       /api/v1/users/register [post]
 func (c *UserControllerImpl) Register(ginContext *gin.Context) {
-	ginContext.JSON(200,
-		gin.H{
-			"hello": "keind",
-		})
+
+	//1 validation
+	var req adapters.RegisterRequest
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		//validation error
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+	}
+
+	user, err := c.userService.Create(ginContext.Request.Context(), req)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+	utils.HandleSuccessResponse(ginContext, 201, "User Registered", user)
 }

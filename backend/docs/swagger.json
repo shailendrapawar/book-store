@@ -1,13 +1,13 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "REST API for Folio Bookstore",
-        "title": "Folio Bookstore API",
+        "description": "REST API for  Bookstore",
+        "title": "Bookstore API",
         "contact": {},
         "version": "1.0"
     },
     "host": "localhost:8080",
-    "basePath": "/api/v1",
+    "basePath": "/",
     "paths": {
         "/api/v1/users/register": {
             "post": {
@@ -24,12 +24,12 @@
                 "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "User registration details",
+                        "description": "Register payload",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/adapters.RegisterRequest"
                         }
                     }
                 ],
@@ -37,7 +37,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/adapters.User"
                         }
                     },
                     "400": {
@@ -45,7 +45,60 @@
                         "schema": {
                             "type": "object"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object"
+                        }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "adapters.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "adapters.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         }

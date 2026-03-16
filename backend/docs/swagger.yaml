@@ -1,9 +1,40 @@
-basePath: /api/v1
+basePath: /
+definitions:
+  adapters.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  adapters.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
-  description: REST API for Folio Bookstore
-  title: Folio Bookstore API
+  description: REST API for  Bookstore
+  title: Bookstore API
   version: "1.0"
 paths:
   /api/v1/users/register:
@@ -12,21 +43,25 @@ paths:
       - application/json
       description: Create a new user account
       parameters:
-      - description: User registration details
+      - description: Register payload
         in: body
         name: body
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/adapters.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            type: object
+            $ref: '#/definitions/adapters.User'
         "400":
           description: Bad Request
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             type: object
       summary: Register a new user
