@@ -42,6 +42,12 @@ func (d *userDAOImpl) Create(ctx context.Context, user *adapters.User) (*adapter
 	return toAdapter(row), err
 }
 
+func (d *userDAOImpl) Get(ctx context.Context, keyword string) (*adapters.RegisterResponse, error) {
+
+	//  _,err:= uuid.Parse()
+
+}
+
 func toAdapter(row *models.User) *adapters.RegisterResponse {
 
 	return &adapters.RegisterResponse{
