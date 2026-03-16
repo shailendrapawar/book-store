@@ -12,7 +12,7 @@ import (
 )
 
 type UserDAO interface {
-	Create(ctx context.Context, user *adapters.User) (*models.User, error)
+	Create(ctx context.Context, user *adapters.User) (*adapters.RegisterResponse, error)
 }
 
 type userDAOImpl struct {
@@ -25,12 +25,12 @@ func NewUserDAO(db *sql.DB) UserDAO {
 	}
 }
 
-func (d *userDAOImpl) Create(ctx context.Context, user *adapters.User) (*models.User, error) {
+func (d *userDAOImpl) Create(ctx context.Context, user *adapters.User) (*adapters.RegisterResponse, error) {
 
 	setter := &models.UserSetter{
 		ID:        omit.From(user.ID),
 		Name:      omit.From(user.Name),
-		Email:     omit.From(user.ID),
+		Email:     omit.From(user.Email),
 		Password:  omit.From(user.Password),
 		Role:      omit.From(user.Role),
 		CreatedAt: omit.From(time.Now()),
@@ -39,5 +39,15 @@ func (d *userDAOImpl) Create(ctx context.Context, user *adapters.User) (*models.
 
 	row, err := models.Users.Insert(setter).One(ctx, d.db)
 
-	return row, err
+	return toAdapter(row), err
+}
+
+func toAdapter(row *models.User) *adapters.RegisterResponse {
+
+	return &adapters.RegisterResponse{
+		Name:  row.ID,
+		Email: row.Email,
+		Role:  row.Role,
+	}
+
 }

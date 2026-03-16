@@ -15,5 +15,6 @@ func UserRoutes(r *gin.RouterGroup, db *sql.DB) {
 	userController := controllers.NewUserController(db)
 
 	userRouter.POST("/register", userController.Register)
+	userRouter.POST("/login", userController.Register)
 
 }
