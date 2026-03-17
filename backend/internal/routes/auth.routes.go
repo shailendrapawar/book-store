@@ -16,5 +16,6 @@ func AuthRoutes(r *gin.RouterGroup, db *sql.DB) {
 	authController := controllers.NewAuthController(db)
 
 	authRouter.POST("/register", authController.Register)
+	authRouter.POST("/login", authController.Login)
 
 }

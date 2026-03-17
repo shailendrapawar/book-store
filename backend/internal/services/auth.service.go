@@ -14,7 +14,7 @@ import (
 
 type AuthService interface {
 	Register(ctx context.Context, req adapters.RegisterRequest) (interface{}, error)
-	// Login()
+	Login(ctx context.Context, req *adapters.LoginRequest) (interface{}, error)
 }
 
 type AuthServiceImpl struct {
@@ -28,7 +28,7 @@ func NewAuthService(db *sql.DB) AuthService {
 }
 
 func (s *AuthServiceImpl) Register(ctx context.Context, req adapters.RegisterRequest) (interface{}, error) {
-	//1 check if already exists : (TODO)
+	//1 check if already exists : (TODO)(OPTIONAL)
 
 	//2: genrate password hash
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -51,4 +51,26 @@ func (s *AuthServiceImpl) Register(ctx context.Context, req adapters.RegisterReq
 	user, err := s.userDAO.Create(ctx, newUser)
 
 	return user, err
+}
+
+func (s *AuthServiceImpl) Login(ctx context.Context, req *adapters.LoginRequest) (interface{}, error) {
+
+	// 1: fetch user first
+	user, err := s.userDAO.GetByEmail(ctx, req.Email)
+	if err != nil {
+		//user dosent exists
+		return nil, errors.New("User dosen't exists")
+	}
+	if user == nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	// 2: decryp hashpass
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		//invalid credentials
+		return nil, errors.New("invalid credentials")
+	}
+
+	return nil, nil
 }

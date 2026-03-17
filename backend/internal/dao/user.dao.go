@@ -15,7 +15,6 @@ import (
 
 type UserDAO interface {
 	Create(ctx context.Context, user *adapters.User) (*adapters.RegisterResponse, error)
-
 	GetByID(ctx context.Context, userID string) (*models.User, error)
 	GetByEmail(ctx context.Context, userEmail string) (*models.User, error)
 }

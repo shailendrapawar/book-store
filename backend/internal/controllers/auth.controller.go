@@ -8,11 +8,13 @@ import (
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
-type AuthController interface{
-Register(ginContext *gin.Context)
+
+type AuthController interface {
+	Register(ginContext *gin.Context)
+	Login(ginContext *gin.Context)
 }
 
-type authControllerImpl struct{
+type authControllerImpl struct {
 	authService services.AuthService
 }
 
@@ -22,7 +24,6 @@ func NewAuthController(db *sql.DB) AuthController {
 		// userService:services.NewUserService(db)
 	}
 }
-
 
 // @Summary      Register a new user
 // @Description  Create a new user account
@@ -50,4 +51,29 @@ func (c *authControllerImpl) Register(ginContext *gin.Context) {
 		return
 	}
 	utils.HandleSuccessResponse(ginContext, 201, "User Registered", user)
+}
+
+func (c *authControllerImpl) Login(ginContext *gin.Context) {
+
+	var req *adapters.LoginRequest
+	var requestContext = ginContext.Request.Context()
+
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		// validation error
+		utils.HandleErrorResponse(ginContext, 400, "Invalid payload", nil)
+		return
+	}
+
+	// call service
+	user, err := c.authService.Login(requestContext, req)
+
+	if err != nil {
+		//user dosent exists
+		utils.HandleErrorResponse(ginContext, 404, err.Error(), nil)
+		return
+	}
+
+	//return response
+	utils.HandleSuccessResponse(ginContext, 201, "User Logged in", user)
+
 }
