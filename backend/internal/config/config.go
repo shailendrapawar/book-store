@@ -34,9 +34,10 @@ type JWTConfig struct {
 // 4: cookies config
 
 type CookieConfig struct {
-	HttpOnly bool
-	Secure   bool
-	Domain   string
+	HttpOnly    bool
+	Secure      bool
+	Domain      string
+	ExpiryHours int
 }
 
 type Config struct {
@@ -70,9 +71,10 @@ func Load() *Config {
 			ExpiryHours: getEnvInt("JWT_EXPIRY_HOURS", 72),
 		},
 		Cookie: CookieConfig{
-			HttpOnly: true,
-			Secure:   getEnv("APP_ENV", "development") == "production",
-			Domain:   getEnv("COOKIE_DOMAIN", "localhost"),
+			HttpOnly:    true,
+			Secure:      getEnv("APP_ENV", "development") == "production",
+			Domain:      getEnv("COOKIE_DOMAIN", ""),
+			ExpiryHours: getEnvInt("COOKIE_EXPIRY", 72),
 		},
 	}
 }

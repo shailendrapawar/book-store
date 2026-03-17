@@ -24,7 +24,6 @@ func NewAuthController(db *sql.DB, cfg *config.Config) AuthController {
 	return &authControllerImpl{
 		authService: services.NewAuthService(db),
 		cfg:         cfg,
-		// userService:services.NewUserService(db)
 	}
 }
 
@@ -91,11 +90,11 @@ func (c *authControllerImpl) Login(ginContext *gin.Context) {
 	ginContext.SetCookie(
 		"token",
 		user.(*adapters.LoginResponse).Token, //token
-		3600*72,                              //age in seconds
+		c.cfg.Cookie.ExpiryHours*60*60,       // cookies age in seconds
 		"/",                                  //path
-		"",                                   //domain
-		false,                                //true in prod
-		true,                                 //http only
+		c.cfg.Cookie.Domain,                  //domain
+		c.cfg.App.Env == "production",        //true in prod
+		true,                                 //http only compulsory
 	)
 
 	//return response
