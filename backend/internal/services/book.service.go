@@ -13,17 +13,17 @@ type BookService interface {
 	Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error)
 }
 
-type bookDAOImpl struct {
+type bookService struct {
 	bookDao dao.BookDAO
 }
 
 func NewBookService(db *sql.DB) BookService {
-	return &bookDAOImpl{
+	return &bookService{
 		bookDao: dao.NewBookDAO(db),
 	}
 }
 
-func (s *bookDAOImpl) Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error) {
+func (s *bookService) Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error) {
 
 	result, err := s.bookDao.Create(ctx, req)
 
