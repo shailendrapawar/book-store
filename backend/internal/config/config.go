@@ -31,10 +31,19 @@ type JWTConfig struct {
 	ExpiryHours int
 }
 
+// 4: cookies config
+
+type CookieConfig struct {
+	HttpOnly bool
+	Secure   bool
+	Domain   string
+}
+
 type Config struct {
-	App AppConfig
-	DB  DBConfig
-	JWT JWTConfig
+	App    AppConfig
+	DB     DBConfig
+	JWT    JWTConfig
+	Cookie CookieConfig
 }
 
 func Load() *Config {
@@ -59,6 +68,11 @@ func Load() *Config {
 		JWT: JWTConfig{
 			Secret:      getEnv("JWT_SECRET", "secret"),
 			ExpiryHours: getEnvInt("JWT_EXPIRY_HOURS", 72),
+		},
+		Cookie: CookieConfig{
+			HttpOnly: true,
+			Secure:   getEnv("APP_ENV", "development") == "production",
+			Domain:   getEnv("COOKIE_DOMAIN", "localhost"),
 		},
 	}
 }

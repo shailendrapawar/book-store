@@ -27,7 +27,7 @@ func main() {
 	router := gin.Default()
 
 	//3: init routes
-	routes.InitRoutes(router, dbConn)
+	routes.InitRoutes(router, dbConn, cfg)
 
 	//add health check
 	router.GET("/health", func(c *gin.Context) {

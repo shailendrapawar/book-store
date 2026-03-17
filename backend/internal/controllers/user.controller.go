@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shailendrapawar/book-store/internal/config"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
@@ -15,11 +16,13 @@ type UserController interface {
 
 type UserControllerImpl struct {
 	userService services.UserService
+	cfg         *config.Config
 }
 
-func NewUserController(db *sql.DB) UserController {
+func NewUserController(db *sql.DB, cfg *config.Config) UserController {
 	return &UserControllerImpl{
 		userService: services.NewUserService(db),
+		cfg:         cfg,
 	}
 }
 

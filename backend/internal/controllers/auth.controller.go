@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/shailendrapawar/book-store/internal/adapters"
+	"github.com/shailendrapawar/book-store/internal/config"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
@@ -16,11 +17,13 @@ type AuthController interface {
 
 type authControllerImpl struct {
 	authService services.AuthService
+	cfg         *config.Config
 }
 
-func NewAuthController(db *sql.DB) AuthController {
+func NewAuthController(db *sql.DB, cfg *config.Config) AuthController {
 	return &authControllerImpl{
 		authService: services.NewAuthService(db),
+		cfg:         cfg,
 		// userService:services.NewUserService(db)
 	}
 }
@@ -82,6 +85,18 @@ func (c *authControllerImpl) Login(ginContext *gin.Context) {
 		utils.HandleErrorResponse(ginContext, 404, err.Error(), nil)
 		return
 	}
+
+	// set cookies
+
+	ginContext.SetCookie(
+		"token",
+		user.(*adapters.LoginResponse).Token, //token
+		3600*72,                              //age in seconds
+		"/",                                  //path
+		"",                                   //domain
+		false,                                //true in prod
+		true,                                 //http only
+	)
 
 	//return response
 	utils.HandleSuccessResponse(ginContext, 200, "User Logged in", user)
