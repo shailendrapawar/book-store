@@ -12,14 +12,25 @@ import (
 // Set the testDB to enable tests that use the database
 var testDB bob.Transactor[bob.Tx]
 
-func TestRandom_int64(t *testing.T) {
+func TestRandom_decimal_Decimal(t *testing.T) {
 	t.Parallel()
 
-	val1 := random_int64(nil)
-	val2 := random_int64(nil)
+	val1 := random_decimal_Decimal(nil)
+	val2 := random_decimal_Decimal(nil)
+
+	if val1.Equal(val2) {
+		t.Fatalf("random_decimal_Decimal() returned the same value twice: %v", val1)
+	}
+}
+
+func TestRandom_int32(t *testing.T) {
+	t.Parallel()
+
+	val1 := random_int32(nil)
+	val2 := random_int32(nil)
 
 	if val1 == val2 {
-		t.Fatalf("random_int64() returned the same value twice: %v", val1)
+		t.Fatalf("random_int32() returned the same value twice: %v", val1)
 	}
 }
 

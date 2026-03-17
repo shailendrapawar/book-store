@@ -8,8 +8,8 @@ import "context"
 type contextKey string
 
 var (
-	// Relationship Contexts for schema_migrations
-	schemaMigrationWithParentsCascadingCtx = newContextual[bool]("schemaMigrationWithParentsCascading")
+	// Relationship Contexts for books
+	bookWithParentsCascadingCtx = newContextual[bool]("bookWithParentsCascading")
 
 	// Relationship Contexts for users
 	userWithParentsCascadingCtx = newContextual[bool]("userWithParentsCascading")

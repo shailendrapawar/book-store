@@ -3,13 +3,25 @@
 
 package models
 
-import "github.com/stephenafamo/bob"
+import (
+	"database/sql"
+	"database/sql/driver"
+
+	"github.com/shopspring/decimal"
+	"github.com/stephenafamo/bob"
+)
 
 // Set the testDB to enable tests that use the database
 var testDB bob.Transactor[bob.Tx]
 
-// Make sure the type SchemaMigration runs hooks after queries
-var _ bob.HookableType = &SchemaMigration{}
+// Make sure the type Book runs hooks after queries
+var _ bob.HookableType = &Book{}
 
 // Make sure the type User runs hooks after queries
 var _ bob.HookableType = &User{}
+
+// Make sure the type decimal.Decimal satisfies database/sql.Scanner
+var _ sql.Scanner = (*decimal.Decimal)(nil)
+
+// Make sure the type decimal.Decimal satisfies database/sql/driver.Valuer
+var _ driver.Valuer = *new(decimal.Decimal)

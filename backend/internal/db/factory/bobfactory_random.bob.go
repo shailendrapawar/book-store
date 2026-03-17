@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jaswdr/faker/v2"
+	"github.com/shopspring/decimal"
 )
 
 var defaultFaker = faker.New()
@@ -21,12 +22,43 @@ func random_bool(f *faker.Faker, limits ...string) bool {
 	return f.Bool()
 }
 
-func random_int64(f *faker.Faker, limits ...string) int64 {
+func random_decimal_Decimal(f *faker.Faker, limits ...string) decimal.Decimal {
 	if f == nil {
 		f = &defaultFaker
 	}
 
-	return f.Int64()
+	var precision int64 = 7
+	var scale int64 = 3
+
+	if len(limits) > 0 {
+		precision, _ = strconv.ParseInt(limits[0], 10, 32)
+	}
+
+	if len(limits) > 1 {
+		scale, _ = strconv.ParseInt(limits[1], 10, 32)
+	}
+
+	baseVal := f.Float32(10, -1, 1)
+	for baseVal == -1 || baseVal == 0 || baseVal == 1 {
+		baseVal = f.Float32(10, -1, 1)
+	}
+
+	precisionDecimal, _ := decimal.NewFromInt(10).PowInt32(int32(precision))
+	val := decimal.
+		NewFromFloat32(baseVal).
+		Mul(precisionDecimal).
+		Shift(int32(-1 * scale)).
+		RoundDown(int32(scale))
+
+	return val
+}
+
+func random_int32(f *faker.Faker, limits ...string) int32 {
+	if f == nil {
+		f = &defaultFaker
+	}
+
+	return f.Int32()
 }
 
 func random_string(f *faker.Faker, limits ...string) string {

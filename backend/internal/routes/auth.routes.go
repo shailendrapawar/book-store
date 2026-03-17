@@ -11,6 +11,7 @@ import (
 
 func AuthRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 
+	//group routes for auth
 	authRouter := r.Group("/auth")
 
 	//init controller with passing db

@@ -7,39 +7,50 @@ import (
 	"context"
 	"time"
 
+	"github.com/aarondl/opt/null"
 	models "github.com/shailendrapawar/book-store/internal/db/models"
+	"github.com/shopspring/decimal"
 )
 
 type Factory struct {
-	baseSchemaMigrationMods SchemaMigrationModSlice
-	baseUserMods            UserModSlice
+	baseBookMods BookModSlice
+	baseUserMods UserModSlice
 }
 
 func New() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) NewSchemaMigration(mods ...SchemaMigrationMod) *SchemaMigrationTemplate {
-	return f.NewSchemaMigrationWithContext(context.Background(), mods...)
+func (f *Factory) NewBook(mods ...BookMod) *BookTemplate {
+	return f.NewBookWithContext(context.Background(), mods...)
 }
 
-func (f *Factory) NewSchemaMigrationWithContext(ctx context.Context, mods ...SchemaMigrationMod) *SchemaMigrationTemplate {
-	o := &SchemaMigrationTemplate{f: f}
+func (f *Factory) NewBookWithContext(ctx context.Context, mods ...BookMod) *BookTemplate {
+	o := &BookTemplate{f: f}
 
 	if f != nil {
-		f.baseSchemaMigrationMods.Apply(ctx, o)
+		f.baseBookMods.Apply(ctx, o)
 	}
 
-	SchemaMigrationModSlice(mods).Apply(ctx, o)
+	BookModSlice(mods).Apply(ctx, o)
 
 	return o
 }
 
-func (f *Factory) FromExistingSchemaMigration(m *models.SchemaMigration) *SchemaMigrationTemplate {
-	o := &SchemaMigrationTemplate{f: f, alreadyPersisted: true}
+func (f *Factory) FromExistingBook(m *models.Book) *BookTemplate {
+	o := &BookTemplate{f: f, alreadyPersisted: true}
 
-	o.Version = func() int64 { return m.Version }
-	o.Dirty = func() bool { return m.Dirty }
+	o.ID = func() string { return m.ID }
+	o.Isbn = func() string { return m.Isbn }
+	o.Title = func() string { return m.Title }
+	o.Author = func() string { return m.Author }
+	o.Description = func() null.Val[string] { return m.Description }
+	o.Price = func() decimal.Decimal { return m.Price }
+	o.Stock = func() int32 { return m.Stock }
+	o.Reserved = func() int32 { return m.Reserved }
+	o.IsActive = func() bool { return m.IsActive }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
 	return o
 }
@@ -74,12 +85,12 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	return o
 }
 
-func (f *Factory) ClearBaseSchemaMigrationMods() {
-	f.baseSchemaMigrationMods = nil
+func (f *Factory) ClearBaseBookMods() {
+	f.baseBookMods = nil
 }
 
-func (f *Factory) AddBaseSchemaMigrationMod(mods ...SchemaMigrationMod) {
-	f.baseSchemaMigrationMods = append(f.baseSchemaMigrationMods, mods...)
+func (f *Factory) AddBaseBookMod(mods ...BookMod) {
+	f.baseBookMods = append(f.baseBookMods, mods...)
 }
 
 func (f *Factory) ClearBaseUserMods() {

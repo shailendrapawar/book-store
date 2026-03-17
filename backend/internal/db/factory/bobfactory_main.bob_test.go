@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCreateSchemaMigration(t *testing.T) {
+func TestCreateBook(t *testing.T) {
 	if testDB == nil {
 		t.Skip("skipping test, no DSN provided")
 	}
@@ -27,8 +27,8 @@ func TestCreateSchemaMigration(t *testing.T) {
 		}
 	}()
 
-	if _, err := New().NewSchemaMigrationWithContext(ctx).Create(ctx, tx); err != nil {
-		t.Fatalf("Error creating SchemaMigration: %v", err)
+	if _, err := New().NewBookWithContext(ctx).Create(ctx, tx); err != nil {
+		t.Fatalf("Error creating Book: %v", err)
 	}
 }
 
