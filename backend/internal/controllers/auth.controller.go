@@ -53,6 +53,16 @@ func (c *authControllerImpl) Register(ginContext *gin.Context) {
 	utils.HandleSuccessResponse(ginContext, 201, "User Registered", user)
 }
 
+// @Summary      Login
+// @Description  Login with email and password
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  adapters.LoginRequest  true  "Login payload"
+// @Success      200   {object}  adapters.LoginResponse
+// @Failure      400   {object}  object
+// @Failure      404   {object}  object
+// @Router       /api/v1/auth/login [post]
 func (c *authControllerImpl) Login(ginContext *gin.Context) {
 
 	var req *adapters.LoginRequest
@@ -74,6 +84,6 @@ func (c *authControllerImpl) Login(ginContext *gin.Context) {
 	}
 
 	//return response
-	utils.HandleSuccessResponse(ginContext, 201, "User Logged in", user)
+	utils.HandleSuccessResponse(ginContext, 200, "User Logged in", user)
 
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,5 +73,19 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req *adapters.LoginRequest)
 		return nil, errors.New("invalid credentials")
 	}
 
-	return nil, nil
+	// 3: generate token
+	token, err := utils.GenerateJwtToken(user.ID, user.Role, "secret", 1)
+	if err != nil {
+		return nil, errors.New("failed to generate token")
+	}
+
+	data := &adapters.LoginResponse{
+		ID:    user.ID,
+		Email: user.Email,
+		Role:  user.Role,
+		Name:  user.Name,
+		Token: token,
+	}
+
+	return data, nil
 }
