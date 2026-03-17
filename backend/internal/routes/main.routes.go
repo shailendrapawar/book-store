@@ -19,4 +19,5 @@ func InitRoutes(r *gin.Engine, db *sql.DB) {
 
 	//init all routes here=======>
 	UserRoutes(rootRouter, db)
+	AuthRoutes(rootRouter, db)
 }

@@ -9,11 +9,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/db/models"
+	"github.com/shailendrapawar/book-store/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
 	Create(ctx context.Context, req adapters.RegisterRequest) (interface{}, error)
+	Get(ctx context.Context, keyword string) (*adapters.User, error)
 }
 
 type UserServiceImpl struct {
@@ -50,4 +53,33 @@ func (s *UserServiceImpl) Create(ctx context.Context, req adapters.RegisterReque
 	user, err := s.userDAO.Create(ctx, newUser)
 
 	return user, err
+}
+
+func (s *UserServiceImpl) Get(ctx context.Context, keyword string) (*adapters.User, error) {
+
+	var user *models.User
+	var err error
+
+	if utils.IsEmail(keyword) {
+		user, err = s.userDAO.GetByEmail(ctx, keyword)
+	} else {
+		user, err = s.userDAO.GetByID(ctx, keyword)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	return &adapters.User{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
 }

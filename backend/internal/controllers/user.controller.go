@@ -2,15 +2,15 @@ package controllers
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
 type UserController interface {
-	Register(ginContext *gin.Context)
+	Get(ginContext *gin.Context)
 }
 
 type UserControllerImpl struct {
@@ -23,30 +23,33 @@ func NewUserController(db *sql.DB) UserController {
 	}
 }
 
-// @Summary      Register a new user
-// @Description  Create a new user account
-// @Tags         users
+// @Summary      Get user by ID or email
+// @Description  Get user by ID or email as identifier
+// @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        body  body  adapters.RegisterRequest  true  "Register payload"
-// @Success      201   {object}  adapters.User
-// @Failure      400   {object}  object
-// @Failure      500   {object}  object
-// @Router       /api/v1/users/register [post]
-func (c *UserControllerImpl) Register(ginContext *gin.Context) {
+// @Param        keyword  path  string  true  "User ID or Email"
+// @Success      200      {object}  adapters.User
+// @Failure      400      {object}  object
+// @Failure      404      {object}  object
+// @Router       /api/v1/users/{keyword} [get]
+func (c *UserControllerImpl) Get(ginContext *gin.Context) {
 
-	//1 validation
-	var req adapters.RegisterRequest
-	if err := ginContext.ShouldBindJSON(&req); err != nil {
-		//validation error
-		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+	//get and validate keyword
+	keyword := ginContext.Param("keyword")
+
+	if strings.Trim(keyword, "") == "" {
+		utils.HandleErrorResponse(ginContext, 400, "Invalid keyword", nil)
+		return
 	}
 
-	user, err := c.userService.Create(ginContext.Request.Context(), req)
+	user, err := c.userService.Get(ginContext.Request.Context(), keyword)
 
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return
 	}
-	utils.HandleSuccessResponse(ginContext, 201, "User Registered", user)
+
+	utils.HandleSuccessResponse(ginContext, 200, "User found", user)
+
 }
