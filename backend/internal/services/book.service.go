@@ -14,6 +14,7 @@ import (
 type BookService interface {
 	Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error)
 	Get(ctx context.Context, identifier string) (interface{}, error)
+	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error)
 }
 
 type bookService struct {
@@ -62,4 +63,13 @@ func (s *bookService) Get(ctx context.Context, identifier string) (interface{}, 
 		return nil, errors.New("Invalid identifier/id")
 	}
 	return book, nil
+}
+
+func (s *bookService) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error) {
+
+	res, err := s.bookDao.Update(ctx, id, payload)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

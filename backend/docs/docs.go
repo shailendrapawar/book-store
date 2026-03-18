@@ -183,6 +183,51 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Update a book by UUID or ISBN identifier",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Update a book",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book UUID or ISBN",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Book Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/adapters.UpdateBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adapters.Book"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/users/{keyword}": {
@@ -236,6 +281,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
                 },
                 "isbn": {
                     "type": "string"
@@ -325,6 +373,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "adapters.UpdateBookRequest": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "isbn": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "stock": {
+                    "type": "integer"
+                },
+                "title": {
                     "type": "string"
                 }
             }

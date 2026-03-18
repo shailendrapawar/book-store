@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/aarondl/opt/omit"
@@ -20,8 +21,12 @@ import (
 type BookDAO interface {
 	//methods
 	Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error)
+
 	GetById(ctx context.Context, id string) (interface{}, error)
 	GetByISBN(ctx context.Context, id string) (interface{}, error)
+
+	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error)
+	setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter
 }
 
 type bookDAOImpl struct {
@@ -85,4 +90,66 @@ func (d *bookDAOImpl) GetByISBN(ctx context.Context, id string) (interface{}, er
 		return nil, errors.New("Error  while getting book")
 	}
 	return book, nil
+}
+
+func (d *bookDAOImpl) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error) {
+
+	res, err := d.GetById(ctx, id)
+	if err != nil {
+		//probably not found  or any error
+		return nil, errors.New(err.Error())
+	}
+	fmt.Println(res)
+
+	// ✅ type assert interface{} to *models.Book
+	entity, ok := res.(*models.Book)
+	if !ok {
+		return nil, errors.New("failed to parse book entity")
+	}
+	//set in model
+	// setter := d.setModel(payload, entity)
+
+	// _, err := models.Books.Update(
+	// 	setter,
+	// 	sm.Where(
+	// 		models.Books.Columns.ID.EQ(psql.Arg(id)),
+	// 	),
+	// ).One(ctx, d.db)
+
+	return nil, nil
+}
+
+func (d *bookDAOImpl) setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter {
+
+	setter := &models.BookSetter{}
+
+	if model.Title != nil {
+		setter.Title = omit.From(*model.Title)
+	}
+
+	if model.Description != nil {
+		setter.Description = omitnull.From(*model.Description)
+	}
+
+	if model.Author != nil {
+		setter.Author = omit.From(*model.Author)
+	}
+
+	if model.Price != nil {
+		setter.Price = omit.From(*model.Price)
+	}
+
+	if model.Price != nil {
+		setter.Price = omit.From(*model.Price)
+	}
+
+	// ======IMP==============
+	if model.Stock != nil && entity.Reserved < *model.Stock {
+		setter.Stock = omit.From(*model.Stock)
+	}
+	if model.Reserved != nil && entity.Stock > *model.Reserved {
+		setter.Reserved = omit.From(*model.Reserved)
+	}
+
+	return setter
 }

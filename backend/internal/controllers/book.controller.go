@@ -13,6 +13,7 @@ import (
 type BookController interface {
 	Create(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
+	Update(ginContext *gin.Context)
 }
 
 type bookControllerImpl struct {
@@ -77,8 +78,8 @@ func (c *bookControllerImpl) Get(ginContext *gin.Context) {
 
 	reqContext := ginContext.Request.Context()
 	id := ginContext.Param("id")
-	if id == "" {
-		utils.HandleErrorResponse(ginContext, 400, "Id missing", nil)
+	if id == "" || !utils.IsUUID(id) {
+		utils.HandleErrorResponse(ginContext, 400, "Invalid id", nil)
 		return
 	}
 
@@ -89,5 +90,37 @@ func (c *bookControllerImpl) Get(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Book Found", book)
+
+}
+
+// Update godoc
+// @Summary      Update a book
+// @Description  Update a book by UUID or ISBN identifier
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                    true  "Book UUID or ISBN"
+// @Param        request  body      adapters.UpdateBookRequest   true  "Update Book Request"
+// @Success      200  {object}  adapters.Book
+// @Failure      400  {object}  object
+// @Router       /api/v1/books/{id} [put]
+func (c *bookControllerImpl) Update(ginContext *gin.Context) {
+	//basic validation
+	reqContext := ginContext.Request.Context()
+	id := ginContext.Param("id")
+	if id == "" || !utils.IsUUID(id) {
+		utils.HandleErrorResponse(ginContext, 400, "Invalid id", nil)
+		return
+	}
+
+	var req adapters.UpdateBookRequest
+
+	book, err := c.bookService.Update(reqContext, id, req)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Book Udpated", book)
 
 }
