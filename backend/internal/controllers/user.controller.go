@@ -34,7 +34,6 @@ func NewUserController(db *sql.DB, cfg *config.Config) UserController {
 // @Param        keyword  path  string  true  "User ID or Email"
 // @Success      200      {object}  adapters.User
 // @Failure      400      {object}  object
-// @Failure      404      {object}  object
 // @Router       /api/v1/users/{keyword} [get]
 func (c *UserControllerImpl) Get(ginContext *gin.Context) {
 

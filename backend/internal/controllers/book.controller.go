@@ -11,6 +11,8 @@ import (
 )
 
 type BookController interface {
+	Create(ginContext *gin.Context)
+	Get(ginContext *gin.Context)
 }
 
 type bookControllerImpl struct {
@@ -25,6 +27,16 @@ func NewBookController(db *sql.DB, cfg *config.Config) BookController {
 	}
 }
 
+// Create godoc
+// @Summary      Create/Add a new book
+// @Description  Create/Add a new book with the provided details to system
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        request  body      adapters.CreateBookRequest  true  "Create Book Request"
+// @Success      200      {object}  adapters.Book
+// @Failure      400      {object}  object
+// @Router       /api/v1/books [post]
 func (c *bookControllerImpl) Create(ginContext *gin.Context) {
 
 	var req adapters.CreateBookRequest
@@ -36,6 +48,11 @@ func (c *bookControllerImpl) Create(ginContext *gin.Context) {
 		return
 	}
 
+	if utils.IsISBN(req.Isbn) == false {
+		utils.HandleErrorResponse(ginContext, 400, "invalid ISBN number", nil)
+		return
+	}
+
 	book, err := c.bookService.Create(requestContext, &req)
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
@@ -43,4 +60,34 @@ func (c *bookControllerImpl) Create(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Book created successfully", book)
+}
+
+// Get godoc
+// @Summary      Get a book by UUID or ISBN
+// @Description  Retrieve a book using either a UUID (e.g. 550e8400-e29b-41d4-a716-446655440000)
+// @Description  or an ISBN-10 (e.g. 0134190440) or ISBN-13 (e.g. 9780134190440)
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Book UUID or ISBN-10/ISBN-13"
+// @Success      200  {object}  adapters.Book
+// @Failure      400  {object}  object
+// @Router       /api/v1/books/{id} [get]
+func (c *bookControllerImpl) Get(ginContext *gin.Context) {
+
+	reqContext := ginContext.Request.Context()
+	id := ginContext.Param("id")
+	if id == "" {
+		utils.HandleErrorResponse(ginContext, 400, "Id missing", nil)
+		return
+	}
+
+	book, err := c.bookService.Get(reqContext, id)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Book Found", book)
+
 }
