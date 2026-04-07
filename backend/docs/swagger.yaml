@@ -13,6 +13,7 @@ definitions:
       isbn:
         type: string
       price:
+        format: float64
         type: number
       stock:
         format: int32
@@ -34,6 +35,11 @@ definitions:
         type: integer
       title:
         type: string
+    required:
+    - author
+    - description
+    - isbn
+    - title
     type: object
   adapters.LoginRequest:
     properties:
@@ -77,11 +83,18 @@ definitions:
         type: string
       description:
         type: string
+      isActive:
+        type: boolean
       isbn:
         type: string
       price:
+        minimum: 0
         type: number
+      reserved:
+        minimum: 0
+        type: integer
       stock:
+        minimum: 0
         type: integer
       title:
         type: string
@@ -226,9 +239,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update a book by UUID or ISBN identifier
+      description: Update a book by id/UUID
       parameters:
-      - description: Book UUID or ISBN
+      - description: 'Book UUID '
         in: path
         name: id
         required: true

@@ -141,5 +141,8 @@ func setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.Boo
 			setter.Reserved = omit.From(*model.Reserved)
 		}
 	}
+	if model.IsActive != nil {
+		setter.IsActive = omit.From(*model.IsActive)
+	}
 	return setter
 }

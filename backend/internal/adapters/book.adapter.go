@@ -34,4 +34,6 @@ type UpdateBookRequest struct {
 	Price    *float64 `json:"price" binding:"omitempty,gte=0"`
 	Stock    *int32   `json:"stock" binding:"omitempty,gte=0"`
 	Reserved *int32   `json:"reserved" binding:"omitempty,gte=0"`
+
+	IsActive *bool `json:"isActive" binding:"omitempty"`
 }

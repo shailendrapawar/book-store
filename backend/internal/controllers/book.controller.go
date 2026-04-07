@@ -95,11 +95,11 @@ func (c *bookControllerImpl) Get(ginContext *gin.Context) {
 
 // Update godoc
 // @Summary      Update a book
-// @Description  Update a book by UUID or ISBN identifier
+// @Description  Update a book by id/UUID
 // @Tags         Books
 // @Accept       json
 // @Produce      json
-// @Param        id       path      string                    true  "Book UUID or ISBN"
+// @Param        id       path      string                    true  "Book UUID "
 // @Param        request  body      adapters.UpdateBookRequest   true  "Update Book Request"
 // @Success      200  {object}  adapters.Book
 // @Failure      400  {object}  object

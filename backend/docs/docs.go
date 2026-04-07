@@ -185,7 +185,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update a book by UUID or ISBN identifier",
+                "description": "Update a book by id/UUID",
                 "consumes": [
                     "application/json"
                 ],
@@ -199,7 +199,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Book UUID or ISBN",
+                        "description": "Book UUID ",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -289,7 +289,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "price": {
-                    "type": "number"
+                    "type": "number",
+                    "format": "float64"
                 },
                 "stock": {
                     "type": "integer",
@@ -302,6 +303,12 @@ const docTemplate = `{
         },
         "adapters.CreateBookRequest": {
             "type": "object",
+            "required": [
+                "author",
+                "description",
+                "isbn",
+                "title"
+            ],
             "properties": {
                 "author": {
                     "type": "string"
@@ -386,14 +393,23 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "isActive": {
+                    "type": "boolean"
+                },
                 "isbn": {
                     "type": "string"
                 },
                 "price": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0
+                },
+                "reserved": {
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "stock": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "title": {
                     "type": "string"
