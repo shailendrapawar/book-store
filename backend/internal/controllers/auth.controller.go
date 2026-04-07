@@ -80,7 +80,7 @@ func (c *authControllerImpl) Login(ginContext *gin.Context) {
 	user, err := c.authService.Login(requestContext, req)
 
 	if err != nil {
-		//user dosent exists
+		//user doesn't exists
 		utils.HandleErrorResponse(ginContext, 404, err.Error(), nil)
 		return
 	}

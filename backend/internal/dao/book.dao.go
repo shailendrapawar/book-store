@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/aarondl/opt/omit"
@@ -13,6 +12,7 @@ import (
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
+	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/sm"
@@ -22,11 +22,11 @@ type BookDAO interface {
 	//methods
 	Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error)
 
-	GetById(ctx context.Context, id string) (interface{}, error)
+	GetById(ctx context.Context, id string) (*models.Book, error)
 	GetByISBN(ctx context.Context, id string) (interface{}, error)
 
-	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error)
-	setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter
+	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (*models.Book, error)
+	// setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter
 }
 
 type bookDAOImpl struct {
@@ -41,7 +41,7 @@ func NewBookDAO(db *sql.DB) BookDAO {
 
 func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error) {
 
-	// genrate uuid
+	// generate uuid
 	bookUuid := uuid.New().String()
 	isbn := utils.NormalizeISBN(book.Isbn)
 
@@ -52,7 +52,7 @@ func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookReque
 		Title:       omit.From(book.Title),
 		Description: omitnull.From(book.Description),
 		Author:      omit.From(book.Author),
-		Price:       omit.From(book.Price),
+		Price:       omit.From(decimal.NewFromFloat(book.Price)),
 		Stock:       omit.From(book.Stock),
 		Reserved:    omit.From(int32(0)),
 		IsActive:    omit.From(true),
@@ -68,7 +68,7 @@ func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookReque
 	return row, nil
 }
 
-func (d *bookDAOImpl) GetById(ctx context.Context, id string) (interface{}, error) {
+func (d *bookDAOImpl) GetById(ctx context.Context, id string) (*models.Book, error) {
 
 	setter := models.Books.Columns.ID.EQ(psql.Arg(id))
 
@@ -77,7 +77,9 @@ func (d *bookDAOImpl) GetById(ctx context.Context, id string) (interface{}, erro
 	if err != nil {
 		return nil, errors.New("Error  while getting book")
 	}
+
 	return book, nil
+
 }
 
 func (d *bookDAOImpl) GetByISBN(ctx context.Context, id string) (interface{}, error) {
@@ -92,34 +94,27 @@ func (d *bookDAOImpl) GetByISBN(ctx context.Context, id string) (interface{}, er
 	return book, nil
 }
 
-func (d *bookDAOImpl) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error) {
+func (d *bookDAOImpl) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (*models.Book, error) {
 
-	res, err := d.GetById(ctx, id)
+	book, err := d.GetById(ctx, id)
+
 	if err != nil {
-		//probably not found  or any error
-		return nil, errors.New(err.Error())
+		return nil, errors.New("Book not found")
 	}
-	fmt.Println(res)
 
-	// ✅ type assert interface{} to *models.Book
-	entity, ok := res.(*models.Book)
-	if !ok {
-		return nil, errors.New("failed to parse book entity")
-	}
-	//set in model
-	// setter := d.setModel(payload, entity)
+	// fill setter
+	setter := setModel(payload, book)
 
-	// _, err := models.Books.Update(
-	// 	setter,
-	// 	sm.Where(
-	// 		models.Books.Columns.ID.EQ(psql.Arg(id)),
-	// 	),
-	// ).One(ctx, d.db)
+	updatedBook, err := models.Books.Update(
+		models.UpdateWhere.Books.ID.EQ(id),
+		models.UpdateWhere.Books.Reserved.LT(book.Stock), // condition in DB
+		setter.UpdateMod(),
+	).One(ctx, d.db)
 
-	return nil, nil
+	return updatedBook, nil
 }
 
-func (d *bookDAOImpl) setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter {
+func setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter {
 
 	setter := &models.BookSetter{}
 
@@ -136,20 +131,15 @@ func (d *bookDAOImpl) setModel(model adapters.UpdateBookRequest, entity *models.
 	}
 
 	if model.Price != nil {
-		setter.Price = omit.From(*model.Price)
-	}
+		setter.Price = omit.From(decimal.NewFromFloat(*model.Price))
 
-	if model.Price != nil {
-		setter.Price = omit.From(*model.Price)
+		// ======IMP==============
+		if model.Stock != nil && entity.Reserved < *model.Stock {
+			setter.Stock = omit.From(*model.Stock)
+		}
+		if model.Reserved != nil && entity.Stock > *model.Reserved {
+			setter.Reserved = omit.From(*model.Reserved)
+		}
 	}
-
-	// ======IMP==============
-	if model.Stock != nil && entity.Reserved < *model.Stock {
-		setter.Stock = omit.From(*model.Stock)
-	}
-	if model.Reserved != nil && entity.Stock > *model.Reserved {
-		setter.Reserved = omit.From(*model.Reserved)
-	}
-
 	return setter
 }

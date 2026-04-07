@@ -1,7 +1,5 @@
 package adapters
 
-import "github.com/shopspring/decimal"
-
 type Book struct {
 	ID          string
 	Title       string
@@ -10,7 +8,7 @@ type Book struct {
 
 	Isbn string
 
-	Price    decimal.Decimal
+	Price    float64
 	Stock    int32
 	IsActive bool
 }
@@ -22,8 +20,8 @@ type CreateBookRequest struct {
 
 	Isbn string `json:"isbn" binding:"required"`
 
-	Price decimal.Decimal `json:"price" binding:"required gte=0" `
-	Stock int32           `json:"stock" binding:"required gte=0"`
+	Price float64 `json:"price" binding:"required gte=0" `
+	Stock int32   `json:"stock" binding:"required gte=0"`
 }
 
 type UpdateBookRequest struct {
@@ -33,7 +31,7 @@ type UpdateBookRequest struct {
 
 	Isbn *string `json:"isbn"`
 
-	Price    *decimal.Decimal `json:"price" binding:"gte=0"`
-	Stock    *int32           `json:"stock" binding:"gte=0"`
-	Reserved *int32           `json:"reserved" binding:"gte=0"`
+	Price    *float64 `json:"price" binding:"omitempty,gte=0"`
+	Stock    *int32   `json:"stock" binding:"omitempty,gte=0"`
+	Reserved *int32   `json:"reserved" binding:"omitempty,gte=0"`
 }

@@ -115,12 +115,18 @@ func (c *bookControllerImpl) Update(ginContext *gin.Context) {
 
 	var req adapters.UpdateBookRequest
 
+	//validate request
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
 	book, err := c.bookService.Update(reqContext, id, req)
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return
 	}
 
-	utils.HandleSuccessResponse(ginContext, 200, "Book Udpated", book)
+	utils.HandleSuccessResponse(ginContext, 200, "Book Updated", book)
 
 }
