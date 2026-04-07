@@ -14,6 +14,7 @@ type BookController interface {
 	Create(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
 	Update(ginContext *gin.Context)
+	Search(ginContext *gin.Context)
 }
 
 type bookControllerImpl struct {
@@ -128,5 +129,22 @@ func (c *bookControllerImpl) Update(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Book Updated", book)
+
+}
+
+func (c *bookControllerImpl) Search(ginContext *gin.Context) {
+	reqContext := ginContext.Request.Context()
+
+	//extract pagination data
+	pagination := utils.HandlePagination(ginContext)
+
+	res, err := c.bookService.Search(reqContext, pagination)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Books Found", res)
 
 }

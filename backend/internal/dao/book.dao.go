@@ -23,10 +23,11 @@ type BookDAO interface {
 	Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error)
 
 	GetById(ctx context.Context, id string) (*models.Book, error)
-	GetByISBN(ctx context.Context, id string) (interface{}, error)
+	GetByISBN(ctx context.Context, id string) (*models.Book, error)
 
 	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (*models.Book, error)
-	// setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.BookSetter
+
+	Search(ctx context.Context, pagination adapters.PaginationRequest) ([]*models.Book, error)
 }
 
 type bookDAOImpl struct {
@@ -82,7 +83,7 @@ func (d *bookDAOImpl) GetById(ctx context.Context, id string) (*models.Book, err
 
 }
 
-func (d *bookDAOImpl) GetByISBN(ctx context.Context, id string) (interface{}, error) {
+func (d *bookDAOImpl) GetByISBN(ctx context.Context, id string) (*models.Book, error) {
 
 	setter := models.Books.Columns.Isbn.EQ(psql.Arg(id))
 
@@ -145,4 +146,20 @@ func setModel(model adapters.UpdateBookRequest, entity *models.Book) *models.Boo
 		setter.IsActive = omit.From(*model.IsActive)
 	}
 	return setter
+}
+
+func (d *bookDAOImpl) Search(ctx context.Context, pagination adapters.PaginationRequest) ([]*models.Book, error) {
+
+	books, err := models.Books.Query(
+		sm.Limit(pagination.Limit),
+		sm.Offset(pagination.Offset),
+		sm.OrderBy(models.Books.Columns.CreatedAt).Desc(),
+	).All(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return books, nil
+
 }

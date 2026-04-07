@@ -15,6 +15,7 @@ type BookService interface {
 	Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error)
 	Get(ctx context.Context, identifier string) (interface{}, error)
 	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error)
+	Search(ctx context.Context, pagination adapters.PaginationRequest) (interface{}, error)
 }
 
 type bookService struct {
@@ -68,6 +69,15 @@ func (s *bookService) Get(ctx context.Context, identifier string) (interface{}, 
 func (s *bookService) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error) {
 
 	res, err := s.bookDao.Update(ctx, id, payload)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *bookService) Search(ctx context.Context, pagination adapters.PaginationRequest) (interface{}, error) {
+
+	res, err := s.bookDao.Search(ctx, pagination)
 	if err != nil {
 		return nil, err
 	}

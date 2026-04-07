@@ -26,5 +26,6 @@ func BookRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	// insert actual routes
 	bookRouter.POST("/", BookController.Create)
 	bookRouter.GET("/:id", BookController.Get)
+	bookRouter.GET("/", BookController.Search)
 	bookRouter.PUT("/:id", BookController.Update)
 }
