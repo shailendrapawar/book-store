@@ -37,7 +37,7 @@ type UpdateBookRequest struct {
 
 	IsActive *bool `json:"isActive" binding:"omitempty"`
 }
-type SearchBookResponse struct {
-	data       []Book
-	pagination Pagination
+type SearchBooksResponse struct {
+	Data       []Book
+	Pagination Pagination
 }

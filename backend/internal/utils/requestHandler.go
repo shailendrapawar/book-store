@@ -38,9 +38,6 @@ func HandlePagination(ctx *gin.Context) adapters.PaginationRequest {
 
 	pagination := adapters.PaginationRequest{}
 
-	// page, _ := ctx.GetQuery("page")
-	// limit, _ := ctx.GetQuery("limit")
-
 	page := ctx.DefaultQuery("page", "1")
 	if page == "0" {
 		page = "1"

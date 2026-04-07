@@ -132,6 +132,18 @@ func (c *bookControllerImpl) Update(ginContext *gin.Context) {
 
 }
 
+// Search godoc
+// @Summary      Search Books
+// @Description  Search books with optional pagination and keyword filtering
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        page     query     int     false  "Page number, default 1"
+// @Param        limit    query     int     false  "Items per page, default 10"
+// @Param        search   query     string  false  "Search keyword"
+// @Success      200  {object}  adapters.SearchBooksResponse
+// @Failure      400  {object}  object
+// @Router       /api/v1/books [get]
 func (c *bookControllerImpl) Search(ginContext *gin.Context) {
 	reqContext := ginContext.Request.Context()
 
@@ -146,5 +158,4 @@ func (c *bookControllerImpl) Search(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Books Found", res)
-
 }
