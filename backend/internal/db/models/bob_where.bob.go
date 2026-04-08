@@ -17,14 +17,20 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
-	Books bookWhere[Q]
-	Users userWhere[Q]
+	Books     bookWhere[Q]
+	CartItems cartItemWhere[Q]
+	Carts     cartWhere[Q]
+	Users     userWhere[Q]
 } {
 	return struct {
-		Books bookWhere[Q]
-		Users userWhere[Q]
+		Books     bookWhere[Q]
+		CartItems cartItemWhere[Q]
+		Carts     cartWhere[Q]
+		Users     userWhere[Q]
 	}{
-		Books: buildBookWhere[Q](Books.Columns),
-		Users: buildUserWhere[Q](Users.Columns),
+		Books:     buildBookWhere[Q](Books.Columns),
+		CartItems: buildCartItemWhere[Q](CartItems.Columns),
+		Carts:     buildCartWhere[Q](Carts.Columns),
+		Users:     buildUserWhere[Q](Users.Columns),
 	}
 }

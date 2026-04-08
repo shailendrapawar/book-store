@@ -13,8 +13,10 @@ import (
 )
 
 type Factory struct {
-	baseBookMods BookModSlice
-	baseUserMods UserModSlice
+	baseBookMods     BookModSlice
+	baseCartItemMods CartItemModSlice
+	baseCartMods     CartModSlice
+	baseUserMods     UserModSlice
 }
 
 func New() *Factory {
@@ -52,6 +54,85 @@ func (f *Factory) FromExistingBook(m *models.Book) *BookTemplate {
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
+	ctx := context.Background()
+	if len(m.R.CartItems) > 0 {
+		BookMods.AddExistingCartItems(m.R.CartItems...).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) NewCartItem(mods ...CartItemMod) *CartItemTemplate {
+	return f.NewCartItemWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewCartItemWithContext(ctx context.Context, mods ...CartItemMod) *CartItemTemplate {
+	o := &CartItemTemplate{f: f}
+
+	if f != nil {
+		f.baseCartItemMods.Apply(ctx, o)
+	}
+
+	CartItemModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingCartItem(m *models.CartItem) *CartItemTemplate {
+	o := &CartItemTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.CartID = func() string { return m.CartID }
+	o.BookID = func() string { return m.BookID }
+	o.Quantity = func() int32 { return m.Quantity }
+	o.Price = func() decimal.Decimal { return m.Price }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.Book != nil {
+		CartItemMods.WithExistingBook(m.R.Book).Apply(ctx, o)
+	}
+	if m.R.Cart != nil {
+		CartItemMods.WithExistingCart(m.R.Cart).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) NewCart(mods ...CartMod) *CartTemplate {
+	return f.NewCartWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewCartWithContext(ctx context.Context, mods ...CartMod) *CartTemplate {
+	o := &CartTemplate{f: f}
+
+	if f != nil {
+		f.baseCartMods.Apply(ctx, o)
+	}
+
+	CartModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingCart(m *models.Cart) *CartTemplate {
+	o := &CartTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
+	o.Status = func() string { return m.Status }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if len(m.R.CartItems) > 0 {
+		CartMods.AddExistingCartItems(m.R.CartItems...).Apply(ctx, o)
+	}
+	if m.R.User != nil {
+		CartMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
+
 	return o
 }
 
@@ -82,6 +163,11 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
+	ctx := context.Background()
+	if len(m.R.Carts) > 0 {
+		UserMods.AddExistingCarts(m.R.Carts...).Apply(ctx, o)
+	}
+
 	return o
 }
 
@@ -91,6 +177,22 @@ func (f *Factory) ClearBaseBookMods() {
 
 func (f *Factory) AddBaseBookMod(mods ...BookMod) {
 	f.baseBookMods = append(f.baseBookMods, mods...)
+}
+
+func (f *Factory) ClearBaseCartItemMods() {
+	f.baseCartItemMods = nil
+}
+
+func (f *Factory) AddBaseCartItemMod(mods ...CartItemMod) {
+	f.baseCartItemMods = append(f.baseCartItemMods, mods...)
+}
+
+func (f *Factory) ClearBaseCartMods() {
+	f.baseCartMods = nil
+}
+
+func (f *Factory) AddBaseCartMod(mods ...CartMod) {
+	f.baseCartMods = append(f.baseCartMods, mods...)
 }
 
 func (f *Factory) ClearBaseUserMods() {

@@ -2,24 +2,14 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/config"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
-// type AuthMiddleware struct {
-// 	cfg *config.Config
-// }
-
-// func NewAuthMiddleware(cfg *config.Config) *AuthMiddleware {
-
-// 	return &AuthMiddleware{
-// 		cfg: cfg,
-// 	}
-// }
+const ContextUserKey = "user"
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
-
-	// ginContext.Next()
 
 	return func(ctx *gin.Context) {
 		// 1: get cookie
@@ -27,7 +17,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		if err != nil {
 			ctx.AbortWithStatusJSON(401, gin.H{
 				"success": false,
-				"message": "Unauthorised - no token",
+				"message": "Unauthorized - no token",
 			})
 			return
 		}
@@ -42,8 +32,11 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 		// 3: set user data in request
-		ctx.Set("user", claims)
+		ctx.Set(ContextUserKey, claims)
 		ctx.Next()
 
 	}
+}
+func CurrentUser(ctx *gin.Context) *adapters.Claims {
+	return ctx.MustGet(ContextUserKey).(*adapters.Claims)
 }

@@ -5,6 +5,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -16,6 +17,9 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/bob/orm"
+	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // User is an object representing the database table.
@@ -27,6 +31,8 @@ type User struct {
 	Role      string    `db:"role" `
 	CreatedAt time.Time `db:"created_at" `
 	UpdatedAt time.Time `db:"updated_at" `
+
+	R userR `db:"-" `
 }
 
 // UserSlice is an alias for a slice of pointers to User.
@@ -38,6 +44,11 @@ var Users = psql.NewTablex[*User, UserSlice, *UserSetter]("", "users", buildUser
 
 // UsersQuery is a query on the users table
 type UsersQuery = *psql.ViewQuery[*User, UserSlice]
+
+// userR is where relationships are stored.
+type userR struct {
+	Carts CartSlice // carts.carts_user_id_fkey
+}
 
 func buildUserColumns(alias string) userColumns {
 	return userColumns{
@@ -308,6 +319,7 @@ func (o *User) Update(ctx context.Context, exec bob.Executor, s *UserSetter) err
 		return err
 	}
 
+	o.R = v.R
 	*o = *v
 
 	return nil
@@ -327,7 +339,7 @@ func (o *User) Reload(ctx context.Context, exec bob.Executor) error {
 	if err != nil {
 		return err
 	}
-
+	o2.R = o.R
 	*o = *o2
 
 	return nil
@@ -374,7 +386,7 @@ func (o UserSlice) copyMatchingRows(from ...*User) {
 			if new.ID != old.ID {
 				continue
 			}
-
+			new.R = old.R
 			o[i] = new
 			break
 		}
@@ -472,6 +484,98 @@ func (o UserSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// Carts starts a query for related objects on carts
+func (o *User) Carts(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
+	return Carts.Query(append(mods,
+		sm.Where(Carts.Columns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Carts(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
+	pkID := make(pgtypes.Array[string], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
+	))
+
+	return Carts.Query(append(mods,
+		sm.Where(psql.Group(Carts.Columns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func insertUserCarts0(ctx context.Context, exec bob.Executor, carts1 []*CartSetter, user0 *User) (CartSlice, error) {
+	for i := range carts1 {
+		carts1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Carts.Insert(bob.ToMods(carts1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserCarts0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserCarts0(ctx context.Context, exec bob.Executor, count int, carts1 CartSlice, user0 *User) (CartSlice, error) {
+	setter := &CartSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := carts1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserCarts0: %w", err)
+	}
+
+	return carts1, nil
+}
+
+func (user0 *User) InsertCarts(ctx context.Context, exec bob.Executor, related ...*CartSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	carts1, err := insertUserCarts0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Carts = append(user0.R.Carts, carts1...)
+
+	for _, rel := range carts1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachCarts(ctx context.Context, exec bob.Executor, related ...*Cart) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	carts1 := CartSlice(related)
+
+	_, err = attachUserCarts0(ctx, exec, len(related), carts1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Carts = append(user0.R.Carts, carts1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
 type userWhere[Q psql.Filterable] struct {
 	ID        psql.WhereMod[Q, string]
 	Name      psql.WhereMod[Q, string]
@@ -495,5 +599,145 @@ func buildUserWhere[Q psql.Filterable](cols userColumns) userWhere[Q] {
 		Role:      psql.Where[Q, string](cols.Role),
 		CreatedAt: psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt: psql.Where[Q, time.Time](cols.UpdatedAt),
+	}
+}
+
+func (o *User) Preload(name string, retrieved any) error {
+	if o == nil {
+		return nil
+	}
+
+	switch name {
+	case "Carts":
+		rels, ok := retrieved.(CartSlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Carts = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("user has no relationship %q", name)
+	}
+}
+
+type userPreloader struct{}
+
+func buildUserPreloader() userPreloader {
+	return userPreloader{}
+}
+
+type userThenLoader[Q orm.Loadable] struct {
+	Carts func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+}
+
+func buildUserThenLoader[Q orm.Loadable]() userThenLoader[Q] {
+	type CartsLoadInterface interface {
+		LoadCarts(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+
+	return userThenLoader[Q]{
+		Carts: thenLoadBuilder[Q](
+			"Carts",
+			func(ctx context.Context, exec bob.Executor, retrieved CartsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadCarts(ctx, exec, mods...)
+			},
+		),
+	}
+}
+
+// LoadCarts loads the user's Carts into the .R struct
+func (o *User) LoadCarts(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Carts = nil
+
+	related, err := o.Carts(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.Carts = related
+	return nil
+}
+
+// LoadCarts loads the user's Carts into the .R struct
+func (os UserSlice) LoadCarts(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	carts, err := os.Carts(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Carts = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range carts {
+
+			if !(o.ID == rel.UserID) {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.Carts = append(o.R.Carts, rel)
+		}
+	}
+
+	return nil
+}
+
+type userJoins[Q dialect.Joinable] struct {
+	typ   string
+	Carts modAs[Q, cartColumns]
+}
+
+func (j userJoins[Q]) aliasedAs(alias string) userJoins[Q] {
+	return buildUserJoins[Q](buildUserColumns(alias), j.typ)
+}
+
+func buildUserJoins[Q dialect.Joinable](cols userColumns, typ string) userJoins[Q] {
+	return userJoins[Q]{
+		typ: typ,
+		Carts: modAs[Q, cartColumns]{
+			c: Carts.Columns,
+			f: func(to cartColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Carts.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 	}
 }

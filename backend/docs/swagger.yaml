@@ -21,6 +21,19 @@ definitions:
       title:
         type: string
     type: object
+  adapters.Cart:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
   adapters.CreateBookRequest:
     properties:
       author:
@@ -135,6 +148,22 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  utils.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -317,6 +346,35 @@ paths:
       summary: Update a book
       tags:
       - Books
+  /api/v1/carts:
+    post:
+      consumes:
+      - application/json
+      description: Creates a cart for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/adapters.Cart'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Create cart
+      tags:
+      - Cart
   /api/v1/users/{keyword}:
     get:
       consumes:

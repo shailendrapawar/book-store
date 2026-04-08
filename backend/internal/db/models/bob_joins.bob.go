@@ -31,7 +31,12 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 	}
 }
 
-type joins[Q dialect.Joinable] struct{}
+type joins[Q dialect.Joinable] struct {
+	Books     joinSet[bookJoins[Q]]
+	CartItems joinSet[cartItemJoins[Q]]
+	Carts     joinSet[cartJoins[Q]]
+	Users     joinSet[userJoins[Q]]
+}
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
 	return joinSet[Q]{
@@ -42,7 +47,12 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 }
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
-	return joins[Q]{}
+	return joins[Q]{
+		Books:     buildJoinSet[bookJoins[Q]](Books.Columns, buildBookJoins),
+		CartItems: buildJoinSet[cartItemJoins[Q]](CartItems.Columns, buildCartItemJoins),
+		Carts:     buildJoinSet[cartJoins[Q]](Carts.Columns, buildCartJoins),
+		Users:     buildJoinSet[userJoins[Q]](Users.Columns, buildUserJoins),
+	}
 }
 
 type modAs[Q any, C interface{ AliasedAs(string) C }] struct {

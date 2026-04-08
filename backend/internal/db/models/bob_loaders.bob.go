@@ -16,10 +16,20 @@ import (
 
 var Preload = getPreloaders()
 
-type preloaders struct{}
+type preloaders struct {
+	Book     bookPreloader
+	CartItem cartItemPreloader
+	Cart     cartPreloader
+	User     userPreloader
+}
 
 func getPreloaders() preloaders {
-	return preloaders{}
+	return preloaders{
+		Book:     buildBookPreloader(),
+		CartItem: buildCartItemPreloader(),
+		Cart:     buildCartPreloader(),
+		User:     buildUserPreloader(),
+	}
 }
 
 var (
@@ -28,10 +38,20 @@ var (
 	UpdateThenLoad = getThenLoaders[*dialect.UpdateQuery]()
 )
 
-type thenLoaders[Q orm.Loadable] struct{}
+type thenLoaders[Q orm.Loadable] struct {
+	Book     bookThenLoader[Q]
+	CartItem cartItemThenLoader[Q]
+	Cart     cartThenLoader[Q]
+	User     userThenLoader[Q]
+}
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
-	return thenLoaders[Q]{}
+	return thenLoaders[Q]{
+		Book:     buildBookThenLoader[Q](),
+		CartItem: buildCartItemThenLoader[Q](),
+		Cart:     buildCartThenLoader[Q](),
+		User:     buildUserThenLoader[Q](),
+	}
 }
 
 func thenLoadBuilder[Q orm.Loadable, T any](name string, f func(context.Context, bob.Executor, T, ...bob.Mod[*dialect.SelectQuery]) error) func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q] {

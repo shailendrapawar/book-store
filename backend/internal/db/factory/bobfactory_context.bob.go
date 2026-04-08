@@ -10,9 +10,21 @@ type contextKey string
 var (
 	// Relationship Contexts for books
 	bookWithParentsCascadingCtx = newContextual[bool]("bookWithParentsCascading")
+	bookRelCartItemsCtx         = newContextual[bool]("books.cart_items.cart_items.cart_items_book_id_fkey")
+
+	// Relationship Contexts for cart_items
+	cartItemWithParentsCascadingCtx = newContextual[bool]("cartItemWithParentsCascading")
+	cartItemRelBookCtx              = newContextual[bool]("books.cart_items.cart_items.cart_items_book_id_fkey")
+	cartItemRelCartCtx              = newContextual[bool]("cart_items.carts.cart_items.cart_items_cart_id_fkey")
+
+	// Relationship Contexts for carts
+	cartWithParentsCascadingCtx = newContextual[bool]("cartWithParentsCascading")
+	cartRelCartItemsCtx         = newContextual[bool]("cart_items.carts.cart_items.cart_items_cart_id_fkey")
+	cartRelUserCtx              = newContextual[bool]("carts.users.carts.carts_user_id_fkey")
 
 	// Relationship Contexts for users
 	userWithParentsCascadingCtx = newContextual[bool]("userWithParentsCascading")
+	userRelCartsCtx             = newContextual[bool]("carts.users.carts.carts_user_id_fkey")
 )
 
 // Contextual is a convienience wrapper around context.WithValue and context.Value

@@ -32,6 +32,54 @@ func TestCreateBook(t *testing.T) {
 	}
 }
 
+func TestCreateCartItem(t *testing.T) {
+	if testDB == nil {
+		t.Skip("skipping test, no DSN provided")
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+
+	tx, err := testDB.Begin(ctx)
+	if err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			t.Fatalf("Error rolling back transaction: %v", err)
+		}
+	}()
+
+	if _, err := New().NewCartItemWithContext(ctx).Create(ctx, tx); err != nil {
+		t.Fatalf("Error creating CartItem: %v", err)
+	}
+}
+
+func TestCreateCart(t *testing.T) {
+	if testDB == nil {
+		t.Skip("skipping test, no DSN provided")
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+
+	tx, err := testDB.Begin(ctx)
+	if err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			t.Fatalf("Error rolling back transaction: %v", err)
+		}
+	}()
+
+	if _, err := New().NewCartWithContext(ctx).Create(ctx, tx); err != nil {
+		t.Fatalf("Error creating Cart: %v", err)
+	}
+}
+
 func TestCreateUser(t *testing.T) {
 	if testDB == nil {
 		t.Skip("skipping test, no DSN provided")

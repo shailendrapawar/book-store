@@ -50,9 +50,19 @@ type BookTemplate struct {
 	CreatedAt   func() time.Time
 	UpdatedAt   func() time.Time
 
+	r bookR
 	f *Factory
 
 	alreadyPersisted bool
+}
+
+type bookR struct {
+	CartItems []*bookRCartItemsR
+}
+
+type bookRCartItemsR struct {
+	number int
+	o      *CartItemTemplate
 }
 
 // Apply mods to the BookTemplate
@@ -64,7 +74,20 @@ func (o *BookTemplate) Apply(ctx context.Context, mods ...BookMod) {
 
 // setModelRels creates and sets the relationships on *models.Book
 // according to the relationships in the template. Nothing is inserted into the db
-func (t BookTemplate) setModelRels(o *models.Book) {}
+func (t BookTemplate) setModelRels(o *models.Book) {
+	if t.r.CartItems != nil {
+		rel := models.CartItemSlice{}
+		for _, r := range t.r.CartItems {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.BookID = o.ID // h2
+				rel.R.Book = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.CartItems = rel
+	}
+}
 
 // BuildSetter returns an *models.BookSetter
 // this does nothing with the relationship templates
@@ -217,6 +240,26 @@ func ensureCreatableBook(m *models.BookSetter) {
 // any required relationship should have already exist on the model
 func (o *BookTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.Book) error {
 	var err error
+
+	isCartItemsDone, _ := bookRelCartItemsCtx.Value(ctx)
+	if !isCartItemsDone && o.r.CartItems != nil {
+		ctx = bookRelCartItemsCtx.WithValue(ctx, true)
+		for _, r := range o.r.CartItems {
+			if r.o.alreadyPersisted {
+				m.R.CartItems = append(m.R.CartItems, r.o.Build())
+			} else {
+				rel0, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachCartItems(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 
 	return err
 }
@@ -693,5 +736,53 @@ func (m bookMods) WithParentsCascading() BookMod {
 			return
 		}
 		ctx = bookWithParentsCascadingCtx.WithValue(ctx, true)
+	})
+}
+
+func (m bookMods) WithCartItems(number int, related *CartItemTemplate) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.CartItems = []*bookRCartItemsR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m bookMods) WithNewCartItems(number int, mods ...CartItemMod) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		related := o.f.NewCartItemWithContext(ctx, mods...)
+		m.WithCartItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m bookMods) AddCartItems(number int, related *CartItemTemplate) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.CartItems = append(o.r.CartItems, &bookRCartItemsR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m bookMods) AddNewCartItems(number int, mods ...CartItemMod) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		related := o.f.NewCartItemWithContext(ctx, mods...)
+		m.AddCartItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m bookMods) AddExistingCartItems(existingModels ...*models.CartItem) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		for _, em := range existingModels {
+			o.r.CartItems = append(o.r.CartItems, &bookRCartItemsR{
+				o: o.f.FromExistingCartItem(em),
+			})
+		}
+	})
+}
+
+func (m bookMods) WithoutCartItems() BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.CartItems = nil
 	})
 }

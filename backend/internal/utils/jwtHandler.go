@@ -5,16 +5,17 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/shailendrapawar/book-store/internal/adapters"
 )
 
-type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
-	jwt.RegisteredClaims
-}
+// type Claims struct {
+// 	UserID string `json:"user_id"`
+// 	Role   string `json:"role"`
+// 	jwt.RegisteredClaims
+// }
 
 func GenerateJwtToken(userID, role, secret string, expiryHours int) (string, error) {
-	claims := &Claims{
+	claims := &adapters.Claims{
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -26,8 +27,8 @@ func GenerateJwtToken(userID, role, secret string, expiryHours int) (string, err
 	return token.SignedString([]byte(secret))
 }
 
-func ValidateToken(tokenString string, secret string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+func ValidateToken(tokenString string, secret string) (*adapters.Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &adapters.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 
@@ -35,7 +36,7 @@ func ValidateToken(tokenString string, secret string) (*Claims, error) {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*adapters.Claims)
 	if !ok || !token.Valid {
 		return nil, errors.New("invalid token")
 	}

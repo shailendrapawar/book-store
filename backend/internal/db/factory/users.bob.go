@@ -43,9 +43,19 @@ type UserTemplate struct {
 	CreatedAt func() time.Time
 	UpdatedAt func() time.Time
 
+	r userR
 	f *Factory
 
 	alreadyPersisted bool
+}
+
+type userR struct {
+	Carts []*userRCartsR
+}
+
+type userRCartsR struct {
+	number int
+	o      *CartTemplate
 }
 
 // Apply mods to the UserTemplate
@@ -57,7 +67,20 @@ func (o *UserTemplate) Apply(ctx context.Context, mods ...UserMod) {
 
 // setModelRels creates and sets the relationships on *models.User
 // according to the relationships in the template. Nothing is inserted into the db
-func (t UserTemplate) setModelRels(o *models.User) {}
+func (t UserTemplate) setModelRels(o *models.User) {
+	if t.r.Carts != nil {
+		rel := models.CartSlice{}
+		for _, r := range t.r.Carts {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.UserID = o.ID // h2
+				rel.R.User = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.Carts = rel
+	}
+}
 
 // BuildSetter returns an *models.UserSetter
 // this does nothing with the relationship templates
@@ -178,6 +201,26 @@ func ensureCreatableUser(m *models.UserSetter) {
 // any required relationship should have already exist on the model
 func (o *UserTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.User) error {
 	var err error
+
+	isCartsDone, _ := userRelCartsCtx.Value(ctx)
+	if !isCartsDone && o.r.Carts != nil {
+		ctx = userRelCartsCtx.WithValue(ctx, true)
+		for _, r := range o.r.Carts {
+			if r.o.alreadyPersisted {
+				m.R.Carts = append(m.R.Carts, r.o.Build())
+			} else {
+				rel0, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachCarts(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 
 	return err
 }
@@ -504,5 +547,53 @@ func (m userMods) WithParentsCascading() UserMod {
 			return
 		}
 		ctx = userWithParentsCascadingCtx.WithValue(ctx, true)
+	})
+}
+
+func (m userMods) WithCarts(number int, related *CartTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Carts = []*userRCartsR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m userMods) WithNewCarts(number int, mods ...CartMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewCartWithContext(ctx, mods...)
+		m.WithCarts(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddCarts(number int, related *CartTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Carts = append(o.r.Carts, &userRCartsR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m userMods) AddNewCarts(number int, mods ...CartMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewCartWithContext(ctx, mods...)
+		m.AddCarts(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddExistingCarts(existingModels ...*models.Cart) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		for _, em := range existingModels {
+			o.r.Carts = append(o.r.Carts, &userRCartsR{
+				o: o.f.FromExistingCart(em),
+			})
+		}
+	})
+}
+
+func (m userMods) WithoutCarts() UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Carts = nil
 	})
 }

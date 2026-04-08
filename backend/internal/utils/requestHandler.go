@@ -7,15 +7,26 @@ import (
 	"github.com/shailendrapawar/book-store/internal/adapters"
 )
 
+type SuccessResponse struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+type ErrorResponse struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
 // error response handler
 func HandleErrorResponse(ctx *gin.Context, statusCode int, message string, data interface{}) interface{} {
 
-	ctx.JSON(statusCode,
-		gin.H{
-			"success": false,
-			"message": message,
-			"data":    data,
-		})
+	ctx.JSON(statusCode, ErrorResponse{
+		Success: false,
+		Message: message,
+		Data:    data,
+	})
 
 	return nil
 }
@@ -24,12 +35,11 @@ func HandleErrorResponse(ctx *gin.Context, statusCode int, message string, data 
 
 func HandleSuccessResponse(ctx *gin.Context, statusCode int, message string, data interface{}) interface{} {
 
-	ctx.JSON(statusCode,
-		gin.H{
-			"success": true,
-			"message": message,
-			"data":    data,
-		})
+	ctx.JSON(statusCode, SuccessResponse{
+		Success: true,
+		Message: message,
+		Data:    data,
+	})
 
 	return nil
 }

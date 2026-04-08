@@ -17,6 +17,12 @@ var testDB bob.Transactor[bob.Tx]
 // Make sure the type Book runs hooks after queries
 var _ bob.HookableType = &Book{}
 
+// Make sure the type CartItem runs hooks after queries
+var _ bob.HookableType = &CartItem{}
+
+// Make sure the type Cart runs hooks after queries
+var _ bob.HookableType = &Cart{}
+
 // Make sure the type User runs hooks after queries
 var _ bob.HookableType = &User{}
 

@@ -1,5 +1,7 @@
 package adapters
 
+import "github.com/golang-jwt/jwt/v5"
+
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
@@ -23,4 +25,9 @@ type LoginResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Role  string `json:"role"`
+}
+type Claims struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
 }
