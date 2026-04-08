@@ -23,5 +23,5 @@ func CartRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 
 	// insert actual routes
 	cartRouter.POST("/", CartController.Create)
-	// cartRouter.GET("/", CartController.Search)
+	cartRouter.GET("/", CartController.Search)
 }

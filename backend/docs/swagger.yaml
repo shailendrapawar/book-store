@@ -347,6 +347,49 @@ paths:
       tags:
       - Books
   /api/v1/carts:
+    get:
+      consumes:
+      - application/json
+      description: Search carts with optional filters and pagination
+      parameters:
+      - description: Filter by cart status
+        in: query
+        name: status
+        type: string
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful search result
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/adapters.Cart'
+                  type: array
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Search carts
+      tags:
+      - Cart
     post:
       consumes:
       - application/json

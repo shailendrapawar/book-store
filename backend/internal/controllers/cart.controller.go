@@ -2,17 +2,17 @@ package controllers
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/config"
-	"github.com/shailendrapawar/book-store/internal/middlewares"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
 type CartController interface {
 	Create(ginContext *gin.Context)
+	Search(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -38,16 +38,55 @@ func NewCartController(db *sql.DB, cfg *config.Config) CartController {
 // @Router       /api/v1/carts [post]
 func (c *cartControllerImpl) Create(ginContext *gin.Context) {
 
-	fmt.Print("reached")
-
 	requestContext := ginContext.Request.Context()
-	user := middlewares.CurrentUser(ginContext)
 
-	res, err := c.cartService.Create(requestContext, user.UserID)
+	res, err := c.cartService.Create(requestContext)
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Cart created", res)
+}
+
+// Search godoc
+// @Summary      Search carts
+// @Description  Search carts with optional filters and pagination
+// @Tags         Cart
+// @Accept       json
+// @Produce      json
+// @Param        status   query     string  false  "Filter by cart status"
+// @Param        page     query     int     false  "Page number for pagination"
+// @Param        limit    query     int     false  "Number of items per page"
+// @Success      200 {object} utils.SuccessResponse{data=[]adapters.Cart} "Successful search result"
+// @Failure      400 {object} utils.ErrorResponse{data=nil} "Bad request"
+// @Router       /api/v1/carts [get]
+func (c *cartControllerImpl) Search(ginContext *gin.Context) {
+
+	requestContext := ginContext.Request.Context()
+
+	//1:extract pagination data
+	pagination := utils.HandlePagination(ginContext)
+
+	//2: extract filters
+	var filters adapters.CartSearchFilters
+
+	// user id
+	if userId := ginContext.Query("userId"); userId != "" {
+		filters.UserID = userId
+	}
+
+	// status
+	if status := ginContext.Query("status"); status != "" {
+		filters.Status = status
+	}
+
+	res, err := c.cartService.Search(requestContext, filters, pagination)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Cart Found", res)
 }

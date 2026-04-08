@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/middlewares"
 )
 
 type CartService interface {
-	Create(ctx context.Context, userID string) (interface{}, error)
+	Create(ctx context.Context) (interface{}, error)
+	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error)
 }
 
 type cartServiceImpl struct {
@@ -21,9 +24,20 @@ func NewCartService(db *sql.DB) CartService {
 	}
 }
 
-func (s *cartServiceImpl) Create(ctx context.Context, userID string) (interface{}, error) {
+func (s *cartServiceImpl) Create(ctx context.Context) (interface{}, error) {
 
+	//get user
+	user := middlewares.GetUserFromCTX(ctx)
 	//check if cart already exists
-	// res, err := s.cartDao.GetByUserID(ctx, userID)
-	return s.cartDao.Create(ctx, userID)
+
+	return s.cartDao.Create(ctx, user.UserID)
+}
+
+func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error) {
+
+	res, err := s.cartDao.Search(ctx, filters, pagination)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
