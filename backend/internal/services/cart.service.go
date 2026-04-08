@@ -12,6 +12,7 @@ import (
 type CartService interface {
 	Create(ctx context.Context) (interface{}, error)
 	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error)
+	Get(ctx context.Context, id string) (interface{}, error)
 }
 
 type cartServiceImpl struct {
@@ -36,6 +37,16 @@ func (s *cartServiceImpl) Create(ctx context.Context) (interface{}, error) {
 func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error) {
 
 	res, err := s.cartDao.Search(ctx, filters, pagination)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *cartServiceImpl) Get(ctx context.Context, id string) (interface{}, error) {
+
+	res, err := s.cartDao.GetByID(ctx, id)
+
 	if err != nil {
 		return nil, err
 	}

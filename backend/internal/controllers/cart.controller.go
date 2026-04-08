@@ -13,6 +13,7 @@ import (
 type CartController interface {
 	Create(ginContext *gin.Context)
 	Search(ginContext *gin.Context)
+	Get(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -83,6 +84,30 @@ func (c *cartControllerImpl) Search(ginContext *gin.Context) {
 
 	res, err := c.cartService.Search(requestContext, filters, pagination)
 
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Cart Found", res)
+}
+
+// Get godoc
+// @Summary      Get a cart by ID
+// @Description  Retrieve a single cart using its UUID
+// @Tags         Cart
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Cart UUID"
+// @Success      200  {object} utils.SuccessResponse{data=adapters.Cart} "Cart retrieved successfully"
+// @Failure      400  {object} utils.ErrorResponse "Bad request or cart not found"
+// @Router       /api/v1/carts/{id} [get]
+func (c *cartControllerImpl) Get(ginContext *gin.Context) {
+
+	requestContext := ginContext.Request.Context()
+	id := ginContext.Param("id")
+
+	res, err := c.cartService.Get(requestContext, id)
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return

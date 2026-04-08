@@ -16,6 +16,8 @@ import (
 type CartDAO interface {
 	Create(ctx context.Context, userID string) (*adapters.Cart, error)
 	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) ([]*adapters.Cart, error)
+	GetByID(ctx context.Context, id string) (*adapters.Cart, error)
+	GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error)
 }
 
 type CartDAOImpl struct {
@@ -51,10 +53,10 @@ func (d *CartDAOImpl) Create(ctx context.Context, userID string) (*adapters.Cart
 	}, nil
 }
 
-func (d *CartDAOImpl) Get(ctx context.Context, id string) (*adapters.Cart, error) {
+func (d *CartDAOImpl) GetByID(ctx context.Context, id string) (*adapters.Cart, error) {
 
 	cart, err := models.Carts.Query(
-		models.SelectWhere.Carts.UserID.EQ(id),
+		models.SelectWhere.Carts.ID.EQ(id),
 	).One(ctx, d.db)
 
 	if err != nil {
@@ -68,7 +70,23 @@ func (d *CartDAOImpl) Get(ctx context.Context, id string) (*adapters.Cart, error
 		UpdatedAt: cart.UpdatedAt,
 	}, nil
 }
+func (d *CartDAOImpl) GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error) {
 
+	cart, err := models.Carts.Query(
+		models.SelectWhere.Carts.UserID.EQ(userID),
+	).One(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+	return &adapters.Cart{
+		ID:        cart.ID,
+		UserID:    cart.UserID,
+		Status:    cart.Status,
+		CreatedAt: cart.CreatedAt,
+		UpdatedAt: cart.UpdatedAt,
+	}, nil
+}
 func (d *CartDAOImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) ([]*adapters.Cart, error) {
 
 	var mods []bob.Mod[*dialect.SelectQuery]
