@@ -1,5 +1,36 @@
 basePath: /
 definitions:
+  adapters.Address:
+    properties:
+      address_type:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      district:
+        type: string
+      is_default:
+        type: boolean
+      landmark:
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      pincode:
+        type: string
+      state:
+        type: string
+    required:
+    - address_type
+    - city
+    - country
+    - district
+    - line1
+    - pincode
+    - state
+    type: object
   adapters.Book:
     properties:
       author:
@@ -33,6 +64,41 @@ definitions:
         type: string
       user_id:
         type: string
+    type: object
+  adapters.CreateAddressRequest:
+    properties:
+      address_type:
+        enum:
+        - home
+        - work
+        - other
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      district:
+        type: string
+      is_default:
+        type: boolean
+      landmark:
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      pincode:
+        type: string
+      state:
+        type: string
+    required:
+    - address_type
+    - city
+    - country
+    - district
+    - line1
+    - pincode
+    - state
     type: object
   adapters.CreateBookRequest:
     properties:
@@ -172,6 +238,37 @@ info:
   title: Bookstore API
   version: "1.0"
 paths:
+  /api/v1/addresses:
+    post:
+      consumes:
+      - application/json
+      description: Create a new address for the logged-in user
+      parameters:
+      - description: Address Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/adapters.CreateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/adapters.Address'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Create a new address
+      tags:
+      - Address
   /api/v1/auth/login:
     post:
       consumes:
@@ -445,7 +542,36 @@ paths:
           description: Bad request or cart not found
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-      summary: Get a cart by ID
+      summary: Get a cart by ID (ADMIN ONLY)
+      tags:
+      - Cart
+  /api/v1/carts/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the cart associated with the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/adapters.Cart'
+              type: object
+        "400":
+          description: Bad request or cart not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Get cart for logged-in user
       tags:
       - Cart
   /api/v1/users/{keyword}:

@@ -10,9 +10,10 @@ import (
 )
 
 type CartService interface {
-	Create(ctx context.Context) (interface{}, error)
+	Create(ctx context.Context) (any, error)
 	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error)
-	Get(ctx context.Context, id string) (interface{}, error)
+	Get(ctx context.Context, id string) (any, error)
+	GetByUserID(ctx context.Context, userID string) (any, error)
 }
 
 type cartServiceImpl struct {
@@ -46,6 +47,16 @@ func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearc
 func (s *cartServiceImpl) Get(ctx context.Context, id string) (interface{}, error) {
 
 	res, err := s.cartDao.GetByID(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *cartServiceImpl) GetByUserID(ctx context.Context, userID string) (interface{}, error) {
+
+	res, err := s.cartDao.GetByUserID(ctx, userID)
 
 	if err != nil {
 		return nil, err

@@ -47,7 +47,9 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 
 // userR is where relationships are stored.
 type userR struct {
-	Carts CartSlice // carts.carts_user_id_fkey
+	Addresses AddressSlice // addresses.addresses_user_id_fkey
+	Carts     CartSlice    // carts.carts_user_id_fkey
+	Orders    OrderSlice   // orders.orders_user_id_fkey
 }
 
 func buildUserColumns(alias string) userColumns {
@@ -484,6 +486,30 @@ func (o UserSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// Addresses starts a query for related objects on addresses
+func (o *User) Addresses(mods ...bob.Mod[*dialect.SelectQuery]) AddressesQuery {
+	return Addresses.Query(append(mods,
+		sm.Where(Addresses.Columns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Addresses(mods ...bob.Mod[*dialect.SelectQuery]) AddressesQuery {
+	pkID := make(pgtypes.Array[string], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
+	))
+
+	return Addresses.Query(append(mods,
+		sm.Where(psql.Group(Addresses.Columns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // Carts starts a query for related objects on carts
 func (o *User) Carts(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
 	return Carts.Query(append(mods,
@@ -506,6 +532,98 @@ func (os UserSlice) Carts(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
 	return Carts.Query(append(mods,
 		sm.Where(psql.Group(Carts.Columns.UserID).OP("IN", PKArgExpr)),
 	)...)
+}
+
+// Orders starts a query for related objects on orders
+func (o *User) Orders(mods ...bob.Mod[*dialect.SelectQuery]) OrdersQuery {
+	return Orders.Query(append(mods,
+		sm.Where(Orders.Columns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Orders(mods ...bob.Mod[*dialect.SelectQuery]) OrdersQuery {
+	pkID := make(pgtypes.Array[string], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
+	))
+
+	return Orders.Query(append(mods,
+		sm.Where(psql.Group(Orders.Columns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func insertUserAddresses0(ctx context.Context, exec bob.Executor, addresses1 []*AddressSetter, user0 *User) (AddressSlice, error) {
+	for i := range addresses1 {
+		addresses1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Addresses.Insert(bob.ToMods(addresses1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserAddresses0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserAddresses0(ctx context.Context, exec bob.Executor, count int, addresses1 AddressSlice, user0 *User) (AddressSlice, error) {
+	setter := &AddressSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := addresses1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserAddresses0: %w", err)
+	}
+
+	return addresses1, nil
+}
+
+func (user0 *User) InsertAddresses(ctx context.Context, exec bob.Executor, related ...*AddressSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	addresses1, err := insertUserAddresses0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Addresses = append(user0.R.Addresses, addresses1...)
+
+	for _, rel := range addresses1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachAddresses(ctx context.Context, exec bob.Executor, related ...*Address) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	addresses1 := AddressSlice(related)
+
+	_, err = attachUserAddresses0(ctx, exec, len(related), addresses1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Addresses = append(user0.R.Addresses, addresses1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
 }
 
 func insertUserCarts0(ctx context.Context, exec bob.Executor, carts1 []*CartSetter, user0 *User) (CartSlice, error) {
@@ -576,6 +694,74 @@ func (user0 *User) AttachCarts(ctx context.Context, exec bob.Executor, related .
 	return nil
 }
 
+func insertUserOrders0(ctx context.Context, exec bob.Executor, orders1 []*OrderSetter, user0 *User) (OrderSlice, error) {
+	for i := range orders1 {
+		orders1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Orders.Insert(bob.ToMods(orders1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserOrders0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserOrders0(ctx context.Context, exec bob.Executor, count int, orders1 OrderSlice, user0 *User) (OrderSlice, error) {
+	setter := &OrderSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := orders1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserOrders0: %w", err)
+	}
+
+	return orders1, nil
+}
+
+func (user0 *User) InsertOrders(ctx context.Context, exec bob.Executor, related ...*OrderSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	orders1, err := insertUserOrders0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Orders = append(user0.R.Orders, orders1...)
+
+	for _, rel := range orders1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachOrders(ctx context.Context, exec bob.Executor, related ...*Order) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	orders1 := OrderSlice(related)
+
+	_, err = attachUserOrders0(ctx, exec, len(related), orders1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Orders = append(user0.R.Orders, orders1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
 type userWhere[Q psql.Filterable] struct {
 	ID        psql.WhereMod[Q, string]
 	Name      psql.WhereMod[Q, string]
@@ -608,6 +794,20 @@ func (o *User) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "Addresses":
+		rels, ok := retrieved.(AddressSlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Addresses = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
 	case "Carts":
 		rels, ok := retrieved.(CartSlice)
 		if !ok {
@@ -615,6 +815,20 @@ func (o *User) Preload(name string, retrieved any) error {
 		}
 
 		o.R.Carts = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
+	case "Orders":
+		rels, ok := retrieved.(OrderSlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Orders = rels
 
 		for _, rel := range rels {
 			if rel != nil {
@@ -634,22 +848,103 @@ func buildUserPreloader() userPreloader {
 }
 
 type userThenLoader[Q orm.Loadable] struct {
-	Carts func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Addresses func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Carts     func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Orders    func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildUserThenLoader[Q orm.Loadable]() userThenLoader[Q] {
+	type AddressesLoadInterface interface {
+		LoadAddresses(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type CartsLoadInterface interface {
 		LoadCarts(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
+	type OrdersLoadInterface interface {
+		LoadOrders(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 
 	return userThenLoader[Q]{
+		Addresses: thenLoadBuilder[Q](
+			"Addresses",
+			func(ctx context.Context, exec bob.Executor, retrieved AddressesLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadAddresses(ctx, exec, mods...)
+			},
+		),
 		Carts: thenLoadBuilder[Q](
 			"Carts",
 			func(ctx context.Context, exec bob.Executor, retrieved CartsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadCarts(ctx, exec, mods...)
 			},
 		),
+		Orders: thenLoadBuilder[Q](
+			"Orders",
+			func(ctx context.Context, exec bob.Executor, retrieved OrdersLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadOrders(ctx, exec, mods...)
+			},
+		),
 	}
+}
+
+// LoadAddresses loads the user's Addresses into the .R struct
+func (o *User) LoadAddresses(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Addresses = nil
+
+	related, err := o.Addresses(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.Addresses = related
+	return nil
+}
+
+// LoadAddresses loads the user's Addresses into the .R struct
+func (os UserSlice) LoadAddresses(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	addresses, err := os.Addresses(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Addresses = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range addresses {
+
+			if !(o.ID == rel.UserID) {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.Addresses = append(o.R.Addresses, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadCarts loads the user's Carts into the .R struct
@@ -713,9 +1008,72 @@ func (os UserSlice) LoadCarts(ctx context.Context, exec bob.Executor, mods ...bo
 	return nil
 }
 
+// LoadOrders loads the user's Orders into the .R struct
+func (o *User) LoadOrders(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Orders = nil
+
+	related, err := o.Orders(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.Orders = related
+	return nil
+}
+
+// LoadOrders loads the user's Orders into the .R struct
+func (os UserSlice) LoadOrders(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	orders, err := os.Orders(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Orders = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range orders {
+
+			if !(o.ID == rel.UserID) {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.Orders = append(o.R.Orders, rel)
+		}
+	}
+
+	return nil
+}
+
 type userJoins[Q dialect.Joinable] struct {
-	typ   string
-	Carts modAs[Q, cartColumns]
+	typ       string
+	Addresses modAs[Q, addressColumns]
+	Carts     modAs[Q, cartColumns]
+	Orders    modAs[Q, orderColumns]
 }
 
 func (j userJoins[Q]) aliasedAs(alias string) userJoins[Q] {
@@ -725,6 +1083,20 @@ func (j userJoins[Q]) aliasedAs(alias string) userJoins[Q] {
 func buildUserJoins[Q dialect.Joinable](cols userColumns, typ string) userJoins[Q] {
 	return userJoins[Q]{
 		typ: typ,
+		Addresses: modAs[Q, addressColumns]{
+			c: Addresses.Columns,
+			f: func(to addressColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Addresses.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		Carts: modAs[Q, cartColumns]{
 			c: Carts.Columns,
 			f: func(to cartColumns) bob.Mod[Q] {
@@ -732,6 +1104,20 @@ func buildUserJoins[Q dialect.Joinable](cols userColumns, typ string) userJoins[
 
 				{
 					mods = append(mods, dialect.Join[Q](typ, Carts.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Orders: modAs[Q, orderColumns]{
+			c: Orders.Columns,
+			f: func(to orderColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Orders.Name().As(to.Alias())).On(
 						to.UserID.EQ(cols.ID),
 					))
 				}

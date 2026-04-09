@@ -17,17 +17,21 @@ import (
 var Preload = getPreloaders()
 
 type preloaders struct {
+	Address  addressPreloader
 	Book     bookPreloader
 	CartItem cartItemPreloader
 	Cart     cartPreloader
+	Order    orderPreloader
 	User     userPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
+		Address:  buildAddressPreloader(),
 		Book:     buildBookPreloader(),
 		CartItem: buildCartItemPreloader(),
 		Cart:     buildCartPreloader(),
+		Order:    buildOrderPreloader(),
 		User:     buildUserPreloader(),
 	}
 }
@@ -39,17 +43,21 @@ var (
 )
 
 type thenLoaders[Q orm.Loadable] struct {
+	Address  addressThenLoader[Q]
 	Book     bookThenLoader[Q]
 	CartItem cartItemThenLoader[Q]
 	Cart     cartThenLoader[Q]
+	Order    orderThenLoader[Q]
 	User     userThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
+		Address:  buildAddressThenLoader[Q](),
 		Book:     buildBookThenLoader[Q](),
 		CartItem: buildCartItemThenLoader[Q](),
 		Cart:     buildCartThenLoader[Q](),
+		Order:    buildOrderThenLoader[Q](),
 		User:     buildUserThenLoader[Q](),
 	}
 }

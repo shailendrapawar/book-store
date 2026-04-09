@@ -13,14 +13,58 @@ import (
 )
 
 type Factory struct {
+	baseAddressMods  AddressModSlice
 	baseBookMods     BookModSlice
 	baseCartItemMods CartItemModSlice
 	baseCartMods     CartModSlice
+	baseOrderMods    OrderModSlice
 	baseUserMods     UserModSlice
 }
 
 func New() *Factory {
 	return &Factory{}
+}
+
+func (f *Factory) NewAddress(mods ...AddressMod) *AddressTemplate {
+	return f.NewAddressWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewAddressWithContext(ctx context.Context, mods ...AddressMod) *AddressTemplate {
+	o := &AddressTemplate{f: f}
+
+	if f != nil {
+		f.baseAddressMods.Apply(ctx, o)
+	}
+
+	AddressModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingAddress(m *models.Address) *AddressTemplate {
+	o := &AddressTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
+	o.AddressesType = func() string { return m.AddressesType }
+	o.Line1 = func() string { return m.Line1 }
+	o.Line2 = func() null.Val[string] { return m.Line2 }
+	o.Landmark = func() null.Val[string] { return m.Landmark }
+	o.City = func() string { return m.City }
+	o.Pincode = func() string { return m.Pincode }
+	o.District = func() string { return m.District }
+	o.State = func() string { return m.State }
+	o.Country = func() string { return m.Country }
+	o.IsDefault = func() bool { return m.IsDefault }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.User != nil {
+		AddressMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
+
+	return o
 }
 
 func (f *Factory) NewBook(mods ...BookMod) *BookTemplate {
@@ -132,6 +176,47 @@ func (f *Factory) FromExistingCart(m *models.Cart) *CartTemplate {
 	if m.R.User != nil {
 		CartMods.WithExistingUser(m.R.User).Apply(ctx, o)
 	}
+	if len(m.R.Orders) > 0 {
+		CartMods.AddExistingOrders(m.R.Orders...).Apply(ctx, o)
+	}
+
+	return o
+}
+
+func (f *Factory) NewOrder(mods ...OrderMod) *OrderTemplate {
+	return f.NewOrderWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewOrderWithContext(ctx context.Context, mods ...OrderMod) *OrderTemplate {
+	o := &OrderTemplate{f: f}
+
+	if f != nil {
+		f.baseOrderMods.Apply(ctx, o)
+	}
+
+	OrderModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingOrder(m *models.Order) *OrderTemplate {
+	o := &OrderTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.UserID = func() string { return m.UserID }
+	o.CartID = func() string { return m.CartID }
+	o.Amount = func() decimal.Decimal { return m.Amount }
+	o.DelieveryAddress = func() string { return m.DelieveryAddress }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.Cart != nil {
+		OrderMods.WithExistingCart(m.R.Cart).Apply(ctx, o)
+	}
+	if m.R.User != nil {
+		OrderMods.WithExistingUser(m.R.User).Apply(ctx, o)
+	}
 
 	return o
 }
@@ -164,11 +249,25 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
 	ctx := context.Background()
+	if len(m.R.Addresses) > 0 {
+		UserMods.AddExistingAddresses(m.R.Addresses...).Apply(ctx, o)
+	}
 	if len(m.R.Carts) > 0 {
 		UserMods.AddExistingCarts(m.R.Carts...).Apply(ctx, o)
 	}
+	if len(m.R.Orders) > 0 {
+		UserMods.AddExistingOrders(m.R.Orders...).Apply(ctx, o)
+	}
 
 	return o
+}
+
+func (f *Factory) ClearBaseAddressMods() {
+	f.baseAddressMods = nil
+}
+
+func (f *Factory) AddBaseAddressMod(mods ...AddressMod) {
+	f.baseAddressMods = append(f.baseAddressMods, mods...)
 }
 
 func (f *Factory) ClearBaseBookMods() {
@@ -193,6 +292,14 @@ func (f *Factory) ClearBaseCartMods() {
 
 func (f *Factory) AddBaseCartMod(mods ...CartMod) {
 	f.baseCartMods = append(f.baseCartMods, mods...)
+}
+
+func (f *Factory) ClearBaseOrderMods() {
+	f.baseOrderMods = nil
+}
+
+func (f *Factory) AddBaseOrderMod(mods ...OrderMod) {
+	f.baseOrderMods = append(f.baseOrderMods, mods...)
 }
 
 func (f *Factory) ClearBaseUserMods() {

@@ -15,6 +15,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/addresses": {
+            "post": {
+                "description": "Create a new address for the logged-in user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Address"
+                ],
+                "summary": "Create a new address",
+                "parameters": [
+                    {
+                        "description": "Address Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/adapters.CreateAddressRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/adapters.Address"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Login with email and password",
@@ -404,6 +456,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/carts/me": {
+            "get": {
+                "description": "Retrieve the cart associated with the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Get cart for logged-in user",
+                "responses": {
+                    "200": {
+                        "description": "Cart retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/adapters.Cart"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or cart not found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/carts/{id}": {
             "get": {
                 "description": "Retrieve a single cart using its UUID",
@@ -416,7 +521,7 @@ const docTemplate = `{
                 "tags": [
                     "Cart"
                 ],
-                "summary": "Get a cart by ID",
+                "summary": "Get a cart by ID (ADMIN ONLY)",
                 "parameters": [
                     {
                         "type": "string",
@@ -494,6 +599,50 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "adapters.Address": {
+            "type": "object",
+            "required": [
+                "address_type",
+                "city",
+                "country",
+                "district",
+                "line1",
+                "pincode",
+                "state"
+            ],
+            "properties": {
+                "address_type": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "landmark": {
+                    "type": "string"
+                },
+                "line1": {
+                    "type": "string"
+                },
+                "line2": {
+                    "type": "string"
+                },
+                "pincode": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
         "adapters.Book": {
             "type": "object",
             "properties": {
@@ -541,6 +690,55 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "adapters.CreateAddressRequest": {
+            "type": "object",
+            "required": [
+                "address_type",
+                "city",
+                "country",
+                "district",
+                "line1",
+                "pincode",
+                "state"
+            ],
+            "properties": {
+                "address_type": {
+                    "type": "string",
+                    "enum": [
+                        "home",
+                        "work",
+                        "other"
+                    ]
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "landmark": {
+                    "type": "string"
+                },
+                "line1": {
+                    "type": "string"
+                },
+                "line2": {
+                    "type": "string"
+                },
+                "pincode": {
+                    "type": "string"
+                },
+                "state": {
                     "type": "string"
                 }
             }

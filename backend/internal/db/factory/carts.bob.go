@@ -50,6 +50,7 @@ type CartTemplate struct {
 type cartR struct {
 	CartItems []*cartRCartItemsR
 	User      *cartRUserR
+	Orders    []*cartROrdersR
 }
 
 type cartRCartItemsR struct {
@@ -58,6 +59,10 @@ type cartRCartItemsR struct {
 }
 type cartRUserR struct {
 	o *UserTemplate
+}
+type cartROrdersR struct {
+	number int
+	o      *OrderTemplate
 }
 
 // Apply mods to the CartTemplate
@@ -88,6 +93,19 @@ func (t CartTemplate) setModelRels(o *models.Cart) {
 		rel.R.Carts = append(rel.R.Carts, o)
 		o.UserID = rel.ID // h2
 		o.R.User = rel
+	}
+
+	if t.r.Orders != nil {
+		rel := models.OrderSlice{}
+		for _, r := range t.r.Orders {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.CartID = o.ID // h2
+				rel.R.Cart = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.Orders = rel
 	}
 }
 
@@ -181,6 +199,10 @@ func ensureCreatableCart(m *models.CartSetter) {
 		val := random_string(nil, "50")
 		m.UserID = omit.From(val)
 	}
+	if !(m.Status.IsValue()) {
+		val := random_string(nil, "20")
+		m.Status = omit.From(val)
+	}
 }
 
 // insertOptRels creates and inserts any optional the relationships on *models.Cart
@@ -202,6 +224,26 @@ func (o *CartTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *
 				}
 
 				err = m.AttachCartItems(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	isOrdersDone, _ := cartRelOrdersCtx.Value(ctx)
+	if !isOrdersDone && o.r.Orders != nil {
+		ctx = cartRelOrdersCtx.WithValue(ctx, true)
+		for _, r := range o.r.Orders {
+			if r.o.alreadyPersisted {
+				m.R.Orders = append(m.R.Orders, r.o.Build())
+			} else {
+				rel2, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachOrders(ctx, exec, rel2...)
 				if err != nil {
 					return err
 				}
@@ -416,7 +458,7 @@ func (m cartMods) UnsetStatus() CartMod {
 func (m cartMods) RandomStatus(f *faker.Faker) CartMod {
 	return CartModFunc(func(_ context.Context, o *CartTemplate) {
 		o.Status = func() string {
-			return random_string(f)
+			return random_string(f, "20")
 		}
 	})
 }
@@ -572,5 +614,53 @@ func (m cartMods) AddExistingCartItems(existingModels ...*models.CartItem) CartM
 func (m cartMods) WithoutCartItems() CartMod {
 	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
 		o.r.CartItems = nil
+	})
+}
+
+func (m cartMods) WithOrders(number int, related *OrderTemplate) CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		o.r.Orders = []*cartROrdersR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m cartMods) WithNewOrders(number int, mods ...OrderMod) CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		related := o.f.NewOrderWithContext(ctx, mods...)
+		m.WithOrders(number, related).Apply(ctx, o)
+	})
+}
+
+func (m cartMods) AddOrders(number int, related *OrderTemplate) CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		o.r.Orders = append(o.r.Orders, &cartROrdersR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m cartMods) AddNewOrders(number int, mods ...OrderMod) CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		related := o.f.NewOrderWithContext(ctx, mods...)
+		m.AddOrders(number, related).Apply(ctx, o)
+	})
+}
+
+func (m cartMods) AddExistingOrders(existingModels ...*models.Order) CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		for _, em := range existingModels {
+			o.r.Orders = append(o.r.Orders, &cartROrdersR{
+				o: o.f.FromExistingOrder(em),
+			})
+		}
+	})
+}
+
+func (m cartMods) WithoutOrders() CartMod {
+	return CartModFunc(func(ctx context.Context, o *CartTemplate) {
+		o.r.Orders = nil
 	})
 }

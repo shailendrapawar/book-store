@@ -38,6 +38,7 @@ func (d *CartDAOImpl) Create(ctx context.Context, userID string) (*adapters.Cart
 		UserID: omit.From(userID),
 		Status: omit.From("active"),
 	}
+
 	cart, err := models.Carts.Insert(&newCart).One(ctx, d.db)
 
 	if err != nil {
@@ -52,7 +53,6 @@ func (d *CartDAOImpl) Create(ctx context.Context, userID string) (*adapters.Cart
 		UpdatedAt: cart.UpdatedAt,
 	}, nil
 }
-
 func (d *CartDAOImpl) GetByID(ctx context.Context, id string) (*adapters.Cart, error) {
 
 	cart, err := models.Carts.Query(
@@ -82,7 +82,6 @@ func (d *CartDAOImpl) GetByUserID(ctx context.Context, userID string) (*adapters
 	return &adapters.Cart{
 		ID:        cart.ID,
 		UserID:    cart.UserID,
-		Status:    cart.Status,
 		CreatedAt: cart.CreatedAt,
 		UpdatedAt: cart.UpdatedAt,
 	}, nil

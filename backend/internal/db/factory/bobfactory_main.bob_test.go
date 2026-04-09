@@ -8,6 +8,30 @@ import (
 	"testing"
 )
 
+func TestCreateAddress(t *testing.T) {
+	if testDB == nil {
+		t.Skip("skipping test, no DSN provided")
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+
+	tx, err := testDB.Begin(ctx)
+	if err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			t.Fatalf("Error rolling back transaction: %v", err)
+		}
+	}()
+
+	if _, err := New().NewAddressWithContext(ctx).Create(ctx, tx); err != nil {
+		t.Fatalf("Error creating Address: %v", err)
+	}
+}
+
 func TestCreateBook(t *testing.T) {
 	if testDB == nil {
 		t.Skip("skipping test, no DSN provided")
@@ -77,6 +101,30 @@ func TestCreateCart(t *testing.T) {
 
 	if _, err := New().NewCartWithContext(ctx).Create(ctx, tx); err != nil {
 		t.Fatalf("Error creating Cart: %v", err)
+	}
+}
+
+func TestCreateOrder(t *testing.T) {
+	if testDB == nil {
+		t.Skip("skipping test, no DSN provided")
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+
+	tx, err := testDB.Begin(ctx)
+	if err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			t.Fatalf("Error rolling back transaction: %v", err)
+		}
+	}()
+
+	if _, err := New().NewOrderWithContext(ctx).Create(ctx, tx); err != nil {
+		t.Fatalf("Error creating Order: %v", err)
 	}
 }
 

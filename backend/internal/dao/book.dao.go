@@ -8,7 +8,6 @@ import (
 
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
-	"github.com/google/uuid"
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
@@ -43,12 +42,12 @@ func NewBookDAO(db *sql.DB) BookDAO {
 func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error) {
 
 	// generate uuid
-	bookUuid := uuid.New().String()
+	bookUUID := utils.CreateUUID()
 	isbn := utils.NormalizeISBN(book.Isbn)
 
 	//set values
 	setter := &models.BookSetter{
-		ID:          omit.From(bookUuid),
+		ID:          omit.From(bookUUID),
 		Isbn:        omit.From(isbn),
 		Title:       omit.From(book.Title),
 		Description: omitnull.From(book.Description),

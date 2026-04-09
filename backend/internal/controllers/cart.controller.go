@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/config"
+	"github.com/shailendrapawar/book-store/internal/middlewares"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
@@ -14,6 +15,7 @@ type CartController interface {
 	Create(ginContext *gin.Context)
 	Search(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
+	GetByID(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -93,7 +95,7 @@ func (c *cartControllerImpl) Search(ginContext *gin.Context) {
 }
 
 // Get godoc
-// @Summary      Get a cart by ID
+// @Summary      Get a cart by ID (ADMIN ONLY)
 // @Description  Retrieve a single cart using its UUID
 // @Tags         Cart
 // @Accept       json
@@ -108,6 +110,28 @@ func (c *cartControllerImpl) Get(ginContext *gin.Context) {
 	id := ginContext.Param("id")
 
 	res, err := c.cartService.Get(requestContext, id)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Cart Found", res)
+}
+
+// GetCartByUser godoc
+// @Summary      Get cart for logged-in user
+// @Description  Retrieve the cart associated with the authenticated user
+// @Tags         Cart
+// @Accept       json
+// @Produce      json
+// @Success      200  {object} utils.SuccessResponse{data=adapters.Cart} "Cart retrieved successfully"
+// @Failure      400  {object} utils.ErrorResponse{data=nil} "Bad request or cart not found"
+// @Router       /api/v1/carts/me [get]
+func (c *cartControllerImpl) GetByID(ginContext *gin.Context) {
+	requestContext := ginContext.Request.Context()
+	user := middlewares.GetUserFromCTX(requestContext)
+
+	res, err := c.cartService.GetByUserID(requestContext, user.UserID)
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return

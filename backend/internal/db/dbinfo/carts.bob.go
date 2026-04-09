@@ -35,8 +35,8 @@ var Carts = Table[
 		},
 		Status: column{
 			Name:      "status",
-			DBType:    "text",
-			Default:   "'active'::text",
+			DBType:    "character varying",
+			Default:   "",
 			Comment:   "",
 			Nullable:  false,
 			Generated: false,

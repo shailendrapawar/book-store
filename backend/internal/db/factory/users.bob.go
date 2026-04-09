@@ -50,12 +50,22 @@ type UserTemplate struct {
 }
 
 type userR struct {
-	Carts []*userRCartsR
+	Addresses []*userRAddressesR
+	Carts     []*userRCartsR
+	Orders    []*userROrdersR
 }
 
+type userRAddressesR struct {
+	number int
+	o      *AddressTemplate
+}
 type userRCartsR struct {
 	number int
 	o      *CartTemplate
+}
+type userROrdersR struct {
+	number int
+	o      *OrderTemplate
 }
 
 // Apply mods to the UserTemplate
@@ -68,6 +78,19 @@ func (o *UserTemplate) Apply(ctx context.Context, mods ...UserMod) {
 // setModelRels creates and sets the relationships on *models.User
 // according to the relationships in the template. Nothing is inserted into the db
 func (t UserTemplate) setModelRels(o *models.User) {
+	if t.r.Addresses != nil {
+		rel := models.AddressSlice{}
+		for _, r := range t.r.Addresses {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.UserID = o.ID // h2
+				rel.R.User = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.Addresses = rel
+	}
+
 	if t.r.Carts != nil {
 		rel := models.CartSlice{}
 		for _, r := range t.r.Carts {
@@ -79,6 +102,19 @@ func (t UserTemplate) setModelRels(o *models.User) {
 			rel = append(rel, related...)
 		}
 		o.R.Carts = rel
+	}
+
+	if t.r.Orders != nil {
+		rel := models.OrderSlice{}
+		for _, r := range t.r.Orders {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.UserID = o.ID // h2
+				rel.R.User = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.Orders = rel
 	}
 }
 
@@ -202,6 +238,26 @@ func ensureCreatableUser(m *models.UserSetter) {
 func (o *UserTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.User) error {
 	var err error
 
+	isAddressesDone, _ := userRelAddressesCtx.Value(ctx)
+	if !isAddressesDone && o.r.Addresses != nil {
+		ctx = userRelAddressesCtx.WithValue(ctx, true)
+		for _, r := range o.r.Addresses {
+			if r.o.alreadyPersisted {
+				m.R.Addresses = append(m.R.Addresses, r.o.Build())
+			} else {
+				rel0, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachAddresses(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	isCartsDone, _ := userRelCartsCtx.Value(ctx)
 	if !isCartsDone && o.r.Carts != nil {
 		ctx = userRelCartsCtx.WithValue(ctx, true)
@@ -209,12 +265,32 @@ func (o *UserTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *
 			if r.o.alreadyPersisted {
 				m.R.Carts = append(m.R.Carts, r.o.Build())
 			} else {
-				rel0, err := r.o.CreateMany(ctx, exec, r.number)
+				rel1, err := r.o.CreateMany(ctx, exec, r.number)
 				if err != nil {
 					return err
 				}
 
-				err = m.AttachCarts(ctx, exec, rel0...)
+				err = m.AttachCarts(ctx, exec, rel1...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	isOrdersDone, _ := userRelOrdersCtx.Value(ctx)
+	if !isOrdersDone && o.r.Orders != nil {
+		ctx = userRelOrdersCtx.WithValue(ctx, true)
+		for _, r := range o.r.Orders {
+			if r.o.alreadyPersisted {
+				m.R.Orders = append(m.R.Orders, r.o.Build())
+			} else {
+				rel2, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachOrders(ctx, exec, rel2...)
 				if err != nil {
 					return err
 				}
@@ -550,6 +626,54 @@ func (m userMods) WithParentsCascading() UserMod {
 	})
 }
 
+func (m userMods) WithAddresses(number int, related *AddressTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Addresses = []*userRAddressesR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m userMods) WithNewAddresses(number int, mods ...AddressMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewAddressWithContext(ctx, mods...)
+		m.WithAddresses(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddAddresses(number int, related *AddressTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Addresses = append(o.r.Addresses, &userRAddressesR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m userMods) AddNewAddresses(number int, mods ...AddressMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewAddressWithContext(ctx, mods...)
+		m.AddAddresses(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddExistingAddresses(existingModels ...*models.Address) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		for _, em := range existingModels {
+			o.r.Addresses = append(o.r.Addresses, &userRAddressesR{
+				o: o.f.FromExistingAddress(em),
+			})
+		}
+	})
+}
+
+func (m userMods) WithoutAddresses() UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Addresses = nil
+	})
+}
+
 func (m userMods) WithCarts(number int, related *CartTemplate) UserMod {
 	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
 		o.r.Carts = []*userRCartsR{{
@@ -595,5 +719,53 @@ func (m userMods) AddExistingCarts(existingModels ...*models.Cart) UserMod {
 func (m userMods) WithoutCarts() UserMod {
 	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
 		o.r.Carts = nil
+	})
+}
+
+func (m userMods) WithOrders(number int, related *OrderTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Orders = []*userROrdersR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m userMods) WithNewOrders(number int, mods ...OrderMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewOrderWithContext(ctx, mods...)
+		m.WithOrders(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddOrders(number int, related *OrderTemplate) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Orders = append(o.r.Orders, &userROrdersR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m userMods) AddNewOrders(number int, mods ...OrderMod) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		related := o.f.NewOrderWithContext(ctx, mods...)
+		m.AddOrders(number, related).Apply(ctx, o)
+	})
+}
+
+func (m userMods) AddExistingOrders(existingModels ...*models.Order) UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		for _, em := range existingModels {
+			o.r.Orders = append(o.r.Orders, &userROrdersR{
+				o: o.f.FromExistingOrder(em),
+			})
+		}
+	})
+}
+
+func (m userMods) WithoutOrders() UserMod {
+	return UserModFunc(func(ctx context.Context, o *UserTemplate) {
+		o.r.Orders = nil
 	})
 }

@@ -22,4 +22,5 @@ func InitRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	AuthRoutes(rootRouter, db, cfg)
 	BookRoutes(rootRouter, db, cfg)
 	CartRoutes(rootRouter, db, cfg)
+	AddressRoutes(rootRouter, db, cfg)
 }
