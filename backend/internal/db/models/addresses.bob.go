@@ -37,7 +37,7 @@ type Address struct {
 	District      string           `db:"district" `
 	State         string           `db:"state" `
 	Country       string           `db:"country" `
-	IsDefault     bool             `db:"is_default" `
+	IsDeleted     bool             `db:"is_deleted" `
 	CreatedAt     time.Time        `db:"created_at" `
 	UpdatedAt     time.Time        `db:"updated_at" `
 
@@ -62,7 +62,7 @@ type addressR struct {
 func buildAddressColumns(alias string) addressColumns {
 	return addressColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "addresses_type", "line1", "line2", "landmark", "city", "pincode", "district", "state", "country", "is_default", "created_at", "updated_at",
+			"id", "user_id", "addresses_type", "line1", "line2", "landmark", "city", "pincode", "district", "state", "country", "is_deleted", "created_at", "updated_at",
 		).WithParent("addresses"),
 		tableAlias:    alias,
 		ID:            psql.Quote(alias, "id"),
@@ -76,7 +76,7 @@ func buildAddressColumns(alias string) addressColumns {
 		District:      psql.Quote(alias, "district"),
 		State:         psql.Quote(alias, "state"),
 		Country:       psql.Quote(alias, "country"),
-		IsDefault:     psql.Quote(alias, "is_default"),
+		IsDeleted:     psql.Quote(alias, "is_deleted"),
 		CreatedAt:     psql.Quote(alias, "created_at"),
 		UpdatedAt:     psql.Quote(alias, "updated_at"),
 	}
@@ -96,7 +96,7 @@ type addressColumns struct {
 	District      psql.Expression
 	State         psql.Expression
 	Country       psql.Expression
-	IsDefault     psql.Expression
+	IsDeleted     psql.Expression
 	CreatedAt     psql.Expression
 	UpdatedAt     psql.Expression
 }
@@ -124,7 +124,7 @@ type AddressSetter struct {
 	District      omit.Val[string]     `db:"district" `
 	State         omit.Val[string]     `db:"state" `
 	Country       omit.Val[string]     `db:"country" `
-	IsDefault     omit.Val[bool]       `db:"is_default" `
+	IsDeleted     omit.Val[bool]       `db:"is_deleted" `
 	CreatedAt     omit.Val[time.Time]  `db:"created_at" `
 	UpdatedAt     omit.Val[time.Time]  `db:"updated_at" `
 }
@@ -164,8 +164,8 @@ func (s AddressSetter) SetColumns() []string {
 	if s.Country.IsValue() {
 		vals = append(vals, "country")
 	}
-	if s.IsDefault.IsValue() {
-		vals = append(vals, "is_default")
+	if s.IsDeleted.IsValue() {
+		vals = append(vals, "is_deleted")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -210,8 +210,8 @@ func (s AddressSetter) Overwrite(t *Address) {
 	if s.Country.IsValue() {
 		t.Country = s.Country.MustGet()
 	}
-	if s.IsDefault.IsValue() {
-		t.IsDefault = s.IsDefault.MustGet()
+	if s.IsDeleted.IsValue() {
+		t.IsDeleted = s.IsDeleted.MustGet()
 	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
@@ -294,8 +294,8 @@ func (s *AddressSetter) Apply(q *dialect.InsertQuery) {
 			vals[10] = psql.Raw("DEFAULT")
 		}
 
-		if s.IsDefault.IsValue() {
-			vals[11] = psql.Arg(s.IsDefault.MustGet())
+		if s.IsDeleted.IsValue() {
+			vals[11] = psql.Arg(s.IsDeleted.MustGet())
 		} else {
 			vals[11] = psql.Raw("DEFAULT")
 		}
@@ -400,10 +400,10 @@ func (s AddressSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if s.IsDefault.IsValue() {
+	if s.IsDeleted.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "is_default")...),
-			psql.Arg(s.IsDefault),
+			psql.Quote(append(prefix, "is_deleted")...),
+			psql.Arg(s.IsDeleted),
 		}})
 	}
 
@@ -731,7 +731,7 @@ type addressWhere[Q psql.Filterable] struct {
 	District      psql.WhereMod[Q, string]
 	State         psql.WhereMod[Q, string]
 	Country       psql.WhereMod[Q, string]
-	IsDefault     psql.WhereMod[Q, bool]
+	IsDeleted     psql.WhereMod[Q, bool]
 	CreatedAt     psql.WhereMod[Q, time.Time]
 	UpdatedAt     psql.WhereMod[Q, time.Time]
 }
@@ -753,7 +753,7 @@ func buildAddressWhere[Q psql.Filterable](cols addressColumns) addressWhere[Q] {
 		District:      psql.Where[Q, string](cols.District),
 		State:         psql.Where[Q, string](cols.State),
 		Country:       psql.Where[Q, string](cols.Country),
-		IsDefault:     psql.Where[Q, bool](cols.IsDefault),
+		IsDeleted:     psql.Where[Q, bool](cols.IsDeleted),
 		CreatedAt:     psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt:     psql.Where[Q, time.Time](cols.UpdatedAt),
 	}

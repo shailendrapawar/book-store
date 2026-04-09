@@ -21,5 +21,7 @@ func AddressRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 
 	//actual routes
 	addressRouter.POST("/", AddressController.Create)
+	addressRouter.GET("/", AddressController.Search)
+	addressRouter.GET("/:id", AddressController.Get)
 
 }

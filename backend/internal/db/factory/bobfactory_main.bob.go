@@ -55,7 +55,7 @@ func (f *Factory) FromExistingAddress(m *models.Address) *AddressTemplate {
 	o.District = func() string { return m.District }
 	o.State = func() string { return m.State }
 	o.Country = func() string { return m.Country }
-	o.IsDefault = func() bool { return m.IsDefault }
+	o.IsDeleted = func() bool { return m.IsDeleted }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 

@@ -48,7 +48,7 @@ type AddressTemplate struct {
 	District      func() string
 	State         func() string
 	Country       func() string
-	IsDefault     func() bool
+	IsDeleted     func() bool
 	CreatedAt     func() time.Time
 	UpdatedAt     func() time.Time
 
@@ -133,9 +133,9 @@ func (o AddressTemplate) BuildSetter() *models.AddressSetter {
 		val := o.Country()
 		m.Country = omit.From(val)
 	}
-	if o.IsDefault != nil {
-		val := o.IsDefault()
-		m.IsDefault = omit.From(val)
+	if o.IsDeleted != nil {
+		val := o.IsDeleted()
+		m.IsDeleted = omit.From(val)
 	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
@@ -200,8 +200,8 @@ func (o AddressTemplate) Build() *models.Address {
 	if o.Country != nil {
 		m.Country = o.Country()
 	}
-	if o.IsDefault != nil {
-		m.IsDefault = o.IsDefault()
+	if o.IsDeleted != nil {
+		m.IsDeleted = o.IsDeleted()
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
@@ -391,7 +391,7 @@ func (m addressMods) RandomizeAllColumns(f *faker.Faker) AddressMod {
 		AddressMods.RandomDistrict(f),
 		AddressMods.RandomState(f),
 		AddressMods.RandomCountry(f),
-		AddressMods.RandomIsDefault(f),
+		AddressMods.RandomIsDeleted(f),
 		AddressMods.RandomCreatedAt(f),
 		AddressMods.RandomUpdatedAt(f),
 	}
@@ -783,31 +783,31 @@ func (m addressMods) RandomCountry(f *faker.Faker) AddressMod {
 }
 
 // Set the model columns to this value
-func (m addressMods) IsDefault(val bool) AddressMod {
+func (m addressMods) IsDeleted(val bool) AddressMod {
 	return AddressModFunc(func(_ context.Context, o *AddressTemplate) {
-		o.IsDefault = func() bool { return val }
+		o.IsDeleted = func() bool { return val }
 	})
 }
 
 // Set the Column from the function
-func (m addressMods) IsDefaultFunc(f func() bool) AddressMod {
+func (m addressMods) IsDeletedFunc(f func() bool) AddressMod {
 	return AddressModFunc(func(_ context.Context, o *AddressTemplate) {
-		o.IsDefault = f
+		o.IsDeleted = f
 	})
 }
 
 // Clear any values for the column
-func (m addressMods) UnsetIsDefault() AddressMod {
+func (m addressMods) UnsetIsDeleted() AddressMod {
 	return AddressModFunc(func(_ context.Context, o *AddressTemplate) {
-		o.IsDefault = nil
+		o.IsDeleted = nil
 	})
 }
 
 // Generates a random value for the column using the given faker
 // if faker is nil, a default faker is used
-func (m addressMods) RandomIsDefault(f *faker.Faker) AddressMod {
+func (m addressMods) RandomIsDeleted(f *faker.Faker) AddressMod {
 	return AddressModFunc(func(_ context.Context, o *AddressTemplate) {
-		o.IsDefault = func() bool {
+		o.IsDeleted = func() bool {
 			return random_bool(f)
 		}
 	})

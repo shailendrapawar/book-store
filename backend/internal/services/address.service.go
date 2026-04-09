@@ -10,6 +10,8 @@ import (
 
 type AddressService interface {
 	Create(ctx context.Context, req *adapters.CreateAddressRequest) (interface{}, error)
+	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error)
+	Get(ctx context.Context, id string) (interface{}, error)
 }
 
 type addressServiceImpl struct {
@@ -28,5 +30,26 @@ func (s *addressServiceImpl) Create(ctx context.Context, req *adapters.CreateAdd
 	if err != nil {
 		return nil, err
 	}
+	return res, nil
+}
+
+func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error) {
+
+	res, err := s.addressDAO.Search(ctx, filters, pagination)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+
+}
+
+func (s *addressServiceImpl) Get(ctx context.Context, id string) (interface{}, error) {
+
+	res, err := s.addressDAO.Get(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }

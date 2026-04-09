@@ -114,8 +114,8 @@ var Addresses = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		IsDefault: column{
-			Name:      "is_default",
+		IsDeleted: column{
+			Name:      "is_deleted",
 			DBType:    "boolean",
 			Default:   "false",
 			Comment:   "",
@@ -193,14 +193,14 @@ type addressColumns struct {
 	District      column
 	State         column
 	Country       column
-	IsDefault     column
+	IsDeleted     column
 	CreatedAt     column
 	UpdatedAt     column
 }
 
 func (c addressColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.AddressesType, c.Line1, c.Line2, c.Landmark, c.City, c.Pincode, c.District, c.State, c.Country, c.IsDefault, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.UserID, c.AddressesType, c.Line1, c.Line2, c.Landmark, c.City, c.Pincode, c.District, c.State, c.Country, c.IsDeleted, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

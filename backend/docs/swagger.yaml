@@ -10,8 +10,8 @@ definitions:
         type: string
       district:
         type: string
-      is_default:
-        type: boolean
+      id:
+        type: string
       landmark:
         type: string
       line1:
@@ -22,6 +22,8 @@ definitions:
         type: string
       state:
         type: string
+      user_id:
+        type: string
     required:
     - address_type
     - city
@@ -30,6 +32,7 @@ definitions:
     - line1
     - pincode
     - state
+    - user_id
     type: object
   adapters.Book:
     properties:
@@ -79,8 +82,6 @@ definitions:
         type: string
       district:
         type: string
-      is_default:
-        type: boolean
       landmark:
         type: string
       line1:
@@ -239,6 +240,71 @@ info:
   version: "1.0"
 paths:
   /api/v1/addresses:
+    get:
+      consumes:
+      - application/json
+      description: Search addresses with filters like user, state, city, district,
+        and deletion status
+      parameters:
+      - description: User ID
+        in: query
+        name: userID
+        type: string
+      - description: State
+        example: Uttarakhand
+        in: query
+        name: state
+        type: string
+      - description: City
+        example: Haldwani
+        in: query
+        name: city
+        type: string
+      - description: District
+        example: nainital
+        in: query
+        name: district
+        type: string
+      - description: Is Deleted
+        example: false
+        in: query
+        name: isDeleted
+        type: boolean
+      - description: Page number
+        example: 1
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        example: 10
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/adapters.Address'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Search addresses
+      tags:
+      - Address
     post:
       consumes:
       - application/json
@@ -267,6 +333,45 @@ paths:
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: Create a new address
+      tags:
+      - Address
+  /api/v1/addresses/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single address by its UUID
+      parameters:
+      - description: Address UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/adapters.Address'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get address by ID
       tags:
       - Address
   /api/v1/auth/login:
