@@ -15,7 +15,7 @@ type CartController interface {
 	Create(ginContext *gin.Context)
 	Search(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
-	GetByID(ginContext *gin.Context)
+	GetByUserID(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -53,7 +53,7 @@ func (c *cartControllerImpl) Create(ginContext *gin.Context) {
 }
 
 // Search godoc
-// @Summary      Search carts
+// @Summary      Search carts  (ADMIN)
 // @Description  Search carts with optional filters and pagination
 // @Tags         Cart
 // @Accept       json
@@ -127,7 +127,7 @@ func (c *cartControllerImpl) Get(ginContext *gin.Context) {
 // @Success      200  {object} utils.SuccessResponse{data=adapters.Cart} "Cart retrieved successfully"
 // @Failure      400  {object} utils.ErrorResponse{data=nil} "Bad request or cart not found"
 // @Router       /api/v1/carts/me [get]
-func (c *cartControllerImpl) GetByID(ginContext *gin.Context) {
+func (c *cartControllerImpl) GetByUserID(ginContext *gin.Context) {
 	requestContext := ginContext.Request.Context()
 	user := middlewares.GetUserFromCTX(requestContext)
 

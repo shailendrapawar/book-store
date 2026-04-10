@@ -15,7 +15,7 @@ type Address struct {
 }
 
 type CreateAddressRequest struct {
-	AddressType string `json:"address_type" binding:"required,oneof=home work other"`
+	AddressType string `json:"address_type" binding:"required,oneof= home office roaming"`
 	Line1       string `json:"line1" binding:"required"`
 	Line2       string `json:"line2"`
 	Landmark    string `json:"landmark"`

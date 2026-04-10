@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
@@ -28,9 +30,13 @@ func NewCartService(db *sql.DB) CartService {
 
 func (s *cartServiceImpl) Create(ctx context.Context) (interface{}, error) {
 
-	//get user
 	user := middlewares.GetUserFromCTX(ctx)
 	//check if cart already exists
+	cart, err := s.cartDao.GetByUserID(ctx, user.UserID)
+	if err == nil {
+		fmt.Print(cart)
+		return nil, errors.New("Cart already exists for this user")
+	}
 
 	return s.cartDao.Create(ctx, user.UserID)
 }

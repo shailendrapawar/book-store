@@ -73,8 +73,8 @@ definitions:
       address_type:
         enum:
         - home
-        - work
-        - other
+        - office
+        - roaming
         type: string
       city:
         type: string

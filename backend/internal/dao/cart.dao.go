@@ -48,7 +48,6 @@ func (d *CartDAOImpl) Create(ctx context.Context, userID string) (*adapters.Cart
 	return &adapters.Cart{
 		ID:        cart.ID,
 		UserID:    cart.UserID,
-		Status:    cart.Status,
 		CreatedAt: cart.CreatedAt,
 		UpdatedAt: cart.UpdatedAt,
 	}, nil
@@ -65,7 +64,6 @@ func (d *CartDAOImpl) GetByID(ctx context.Context, id string) (*adapters.Cart, e
 	return &adapters.Cart{
 		ID:        cart.ID,
 		UserID:    cart.UserID,
-		Status:    cart.Status,
 		CreatedAt: cart.CreatedAt,
 		UpdatedAt: cart.UpdatedAt,
 	}, nil
@@ -113,7 +111,6 @@ func (d *CartDAOImpl) Search(ctx context.Context, filters adapters.CartSearchFil
 		c := &adapters.Cart{
 			ID:        v.ID,
 			UserID:    v.UserID,
-			Status:    v.Status,
 			CreatedAt: v.CreatedAt,
 			UpdatedAt: v.UpdatedAt,
 		}

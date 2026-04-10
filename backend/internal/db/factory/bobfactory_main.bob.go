@@ -5,11 +5,13 @@ package factory
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/aarondl/opt/null"
 	models "github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shopspring/decimal"
+	"github.com/stephenafamo/bob/types"
 )
 
 type Factory struct {
@@ -176,9 +178,6 @@ func (f *Factory) FromExistingCart(m *models.Cart) *CartTemplate {
 	if m.R.User != nil {
 		CartMods.WithExistingUser(m.R.User).Apply(ctx, o)
 	}
-	if len(m.R.Orders) > 0 {
-		CartMods.AddExistingOrders(m.R.Orders...).Apply(ctx, o)
-	}
 
 	return o
 }
@@ -204,16 +203,21 @@ func (f *Factory) FromExistingOrder(m *models.Order) *OrderTemplate {
 
 	o.ID = func() string { return m.ID }
 	o.UserID = func() string { return m.UserID }
-	o.CartID = func() string { return m.CartID }
-	o.Amount = func() decimal.Decimal { return m.Amount }
-	o.DelieveryAddress = func() string { return m.DelieveryAddress }
+	o.Status = func() string { return m.Status }
+	o.DiscountValue = func() decimal.Decimal { return m.DiscountValue }
+	o.DiscountType = func() string { return m.DiscountType }
+	o.GrossAmount = func() decimal.Decimal { return m.GrossAmount }
+	o.NetAmount = func() decimal.Decimal { return m.NetAmount }
+	o.ShippingAddress = func() types.JSON[json.RawMessage] { return m.ShippingAddress }
+	o.ShippingCity = func() string { return m.ShippingCity }
+	o.ShippingState = func() string { return m.ShippingState }
+	o.ShippingPincode = func() string { return m.ShippingPincode }
+	o.PaymentStatus = func() string { return m.PaymentStatus }
+	o.PaymentMethod = func() string { return m.PaymentMethod }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
 	ctx := context.Background()
-	if m.R.Cart != nil {
-		OrderMods.WithExistingCart(m.R.Cart).Apply(ctx, o)
-	}
 	if m.R.User != nil {
 		OrderMods.WithExistingUser(m.R.User).Apply(ctx, o)
 	}

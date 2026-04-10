@@ -6,9 +6,11 @@ package models
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 
 	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/types"
 )
 
 // Set the testDB to enable tests that use the database
@@ -37,3 +39,9 @@ var _ sql.Scanner = (*decimal.Decimal)(nil)
 
 // Make sure the type decimal.Decimal satisfies database/sql/driver.Valuer
 var _ driver.Valuer = *new(decimal.Decimal)
+
+// Make sure the type types.JSON[json.RawMessage] satisfies database/sql.Scanner
+var _ sql.Scanner = (*types.JSON[json.RawMessage])(nil)
+
+// Make sure the type types.JSON[json.RawMessage] satisfies database/sql/driver.Valuer
+var _ driver.Valuer = *new(types.JSON[json.RawMessage])

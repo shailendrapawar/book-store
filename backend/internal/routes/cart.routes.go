@@ -25,5 +25,5 @@ func CartRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	cartRouter.POST("/", CartController.Create)
 	cartRouter.GET("/", CartController.Search)
 	cartRouter.GET("/:id", CartController.Get)
-	cartRouter.GET("/me", CartController.GetByID)
+	cartRouter.GET("/me", CartController.GetByUserID)
 }

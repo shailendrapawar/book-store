@@ -5,6 +5,7 @@ package factory
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	models "github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/types"
 )
 
 type OrderMod interface {
@@ -36,13 +38,21 @@ func (mods OrderModSlice) Apply(ctx context.Context, n *OrderTemplate) {
 // OrderTemplate is an object representing the database table.
 // all columns are optional and should be set by mods
 type OrderTemplate struct {
-	ID               func() string
-	UserID           func() string
-	CartID           func() string
-	Amount           func() decimal.Decimal
-	DelieveryAddress func() string
-	CreatedAt        func() time.Time
-	UpdatedAt        func() time.Time
+	ID              func() string
+	UserID          func() string
+	Status          func() string
+	DiscountValue   func() decimal.Decimal
+	DiscountType    func() string
+	GrossAmount     func() decimal.Decimal
+	NetAmount       func() decimal.Decimal
+	ShippingAddress func() types.JSON[json.RawMessage]
+	ShippingCity    func() string
+	ShippingState   func() string
+	ShippingPincode func() string
+	PaymentStatus   func() string
+	PaymentMethod   func() string
+	CreatedAt       func() time.Time
+	UpdatedAt       func() time.Time
 
 	r orderR
 	f *Factory
@@ -51,13 +61,9 @@ type OrderTemplate struct {
 }
 
 type orderR struct {
-	Cart *orderRCartR
 	User *orderRUserR
 }
 
-type orderRCartR struct {
-	o *CartTemplate
-}
 type orderRUserR struct {
 	o *UserTemplate
 }
@@ -72,13 +78,6 @@ func (o *OrderTemplate) Apply(ctx context.Context, mods ...OrderMod) {
 // setModelRels creates and sets the relationships on *models.Order
 // according to the relationships in the template. Nothing is inserted into the db
 func (t OrderTemplate) setModelRels(o *models.Order) {
-	if t.r.Cart != nil {
-		rel := t.r.Cart.o.Build()
-		rel.R.Orders = append(rel.R.Orders, o)
-		o.CartID = rel.ID // h2
-		o.R.Cart = rel
-	}
-
 	if t.r.User != nil {
 		rel := t.r.User.o.Build()
 		rel.R.Orders = append(rel.R.Orders, o)
@@ -100,17 +99,49 @@ func (o OrderTemplate) BuildSetter() *models.OrderSetter {
 		val := o.UserID()
 		m.UserID = omit.From(val)
 	}
-	if o.CartID != nil {
-		val := o.CartID()
-		m.CartID = omit.From(val)
+	if o.Status != nil {
+		val := o.Status()
+		m.Status = omit.From(val)
 	}
-	if o.Amount != nil {
-		val := o.Amount()
-		m.Amount = omit.From(val)
+	if o.DiscountValue != nil {
+		val := o.DiscountValue()
+		m.DiscountValue = omit.From(val)
 	}
-	if o.DelieveryAddress != nil {
-		val := o.DelieveryAddress()
-		m.DelieveryAddress = omit.From(val)
+	if o.DiscountType != nil {
+		val := o.DiscountType()
+		m.DiscountType = omit.From(val)
+	}
+	if o.GrossAmount != nil {
+		val := o.GrossAmount()
+		m.GrossAmount = omit.From(val)
+	}
+	if o.NetAmount != nil {
+		val := o.NetAmount()
+		m.NetAmount = omit.From(val)
+	}
+	if o.ShippingAddress != nil {
+		val := o.ShippingAddress()
+		m.ShippingAddress = omit.From(val)
+	}
+	if o.ShippingCity != nil {
+		val := o.ShippingCity()
+		m.ShippingCity = omit.From(val)
+	}
+	if o.ShippingState != nil {
+		val := o.ShippingState()
+		m.ShippingState = omit.From(val)
+	}
+	if o.ShippingPincode != nil {
+		val := o.ShippingPincode()
+		m.ShippingPincode = omit.From(val)
+	}
+	if o.PaymentStatus != nil {
+		val := o.PaymentStatus()
+		m.PaymentStatus = omit.From(val)
+	}
+	if o.PaymentMethod != nil {
+		val := o.PaymentMethod()
+		m.PaymentMethod = omit.From(val)
 	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
@@ -148,14 +179,38 @@ func (o OrderTemplate) Build() *models.Order {
 	if o.UserID != nil {
 		m.UserID = o.UserID()
 	}
-	if o.CartID != nil {
-		m.CartID = o.CartID()
+	if o.Status != nil {
+		m.Status = o.Status()
 	}
-	if o.Amount != nil {
-		m.Amount = o.Amount()
+	if o.DiscountValue != nil {
+		m.DiscountValue = o.DiscountValue()
 	}
-	if o.DelieveryAddress != nil {
-		m.DelieveryAddress = o.DelieveryAddress()
+	if o.DiscountType != nil {
+		m.DiscountType = o.DiscountType()
+	}
+	if o.GrossAmount != nil {
+		m.GrossAmount = o.GrossAmount()
+	}
+	if o.NetAmount != nil {
+		m.NetAmount = o.NetAmount()
+	}
+	if o.ShippingAddress != nil {
+		m.ShippingAddress = o.ShippingAddress()
+	}
+	if o.ShippingCity != nil {
+		m.ShippingCity = o.ShippingCity()
+	}
+	if o.ShippingState != nil {
+		m.ShippingState = o.ShippingState()
+	}
+	if o.ShippingPincode != nil {
+		m.ShippingPincode = o.ShippingPincode()
+	}
+	if o.PaymentStatus != nil {
+		m.PaymentStatus = o.PaymentStatus()
+	}
+	if o.PaymentMethod != nil {
+		m.PaymentMethod = o.PaymentMethod()
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
@@ -191,17 +246,33 @@ func ensureCreatableOrder(m *models.OrderSetter) {
 		val := random_string(nil, "50")
 		m.UserID = omit.From(val)
 	}
-	if !(m.CartID.IsValue()) {
-		val := random_string(nil, "50")
-		m.CartID = omit.From(val)
-	}
-	if !(m.Amount.IsValue()) {
+	if !(m.GrossAmount.IsValue()) {
 		val := random_decimal_Decimal(nil, "10", "2")
-		m.Amount = omit.From(val)
+		m.GrossAmount = omit.From(val)
 	}
-	if !(m.DelieveryAddress.IsValue()) {
+	if !(m.NetAmount.IsValue()) {
+		val := random_decimal_Decimal(nil, "10", "2")
+		m.NetAmount = omit.From(val)
+	}
+	if !(m.ShippingAddress.IsValue()) {
+		val := random_types_JSON_json_RawMessage_(nil)
+		m.ShippingAddress = omit.From(val)
+	}
+	if !(m.ShippingCity.IsValue()) {
 		val := random_string(nil, "255")
-		m.DelieveryAddress = omit.From(val)
+		m.ShippingCity = omit.From(val)
+	}
+	if !(m.ShippingState.IsValue()) {
+		val := random_string(nil, "255")
+		m.ShippingState = omit.From(val)
+	}
+	if !(m.ShippingPincode.IsValue()) {
+		val := random_string(nil, "10")
+		m.ShippingPincode = omit.From(val)
+	}
+	if !(m.PaymentMethod.IsValue()) {
+		val := random_string(nil, "20")
+		m.PaymentMethod = omit.From(val)
 	}
 }
 
@@ -221,47 +292,29 @@ func (o *OrderTemplate) Create(ctx context.Context, exec bob.Executor) (*models.
 	opt := o.BuildSetter()
 	ensureCreatableOrder(opt)
 
-	if o.r.Cart == nil {
-		OrderMods.WithNewCart().Apply(ctx, o)
-	}
-
-	var rel0 *models.Cart
-
-	if o.r.Cart.o.alreadyPersisted {
-		rel0 = o.r.Cart.o.Build()
-	} else {
-		rel0, err = o.r.Cart.o.Create(ctx, exec)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	opt.CartID = omit.From(rel0.ID)
-
 	if o.r.User == nil {
 		OrderMods.WithNewUser().Apply(ctx, o)
 	}
 
-	var rel1 *models.User
+	var rel0 *models.User
 
 	if o.r.User.o.alreadyPersisted {
-		rel1 = o.r.User.o.Build()
+		rel0 = o.r.User.o.Build()
 	} else {
-		rel1, err = o.r.User.o.Create(ctx, exec)
+		rel0, err = o.r.User.o.Create(ctx, exec)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	opt.UserID = omit.From(rel1.ID)
+	opt.UserID = omit.From(rel0.ID)
 
 	m, err := models.Orders.Insert(opt).One(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
 
-	m.R.Cart = rel0
-	m.R.User = rel1
+	m.R.User = rel0
 
 	if err := o.insertOptRels(ctx, exec, m); err != nil {
 		return nil, err
@@ -342,9 +395,17 @@ func (m orderMods) RandomizeAllColumns(f *faker.Faker) OrderMod {
 	return OrderModSlice{
 		OrderMods.RandomID(f),
 		OrderMods.RandomUserID(f),
-		OrderMods.RandomCartID(f),
-		OrderMods.RandomAmount(f),
-		OrderMods.RandomDelieveryAddress(f),
+		OrderMods.RandomStatus(f),
+		OrderMods.RandomDiscountValue(f),
+		OrderMods.RandomDiscountType(f),
+		OrderMods.RandomGrossAmount(f),
+		OrderMods.RandomNetAmount(f),
+		OrderMods.RandomShippingAddress(f),
+		OrderMods.RandomShippingCity(f),
+		OrderMods.RandomShippingState(f),
+		OrderMods.RandomShippingPincode(f),
+		OrderMods.RandomPaymentStatus(f),
+		OrderMods.RandomPaymentMethod(f),
 		OrderMods.RandomCreatedAt(f),
 		OrderMods.RandomUpdatedAt(f),
 	}
@@ -413,94 +474,342 @@ func (m orderMods) RandomUserID(f *faker.Faker) OrderMod {
 }
 
 // Set the model columns to this value
-func (m orderMods) CartID(val string) OrderMod {
+func (m orderMods) Status(val string) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.CartID = func() string { return val }
+		o.Status = func() string { return val }
 	})
 }
 
 // Set the Column from the function
-func (m orderMods) CartIDFunc(f func() string) OrderMod {
+func (m orderMods) StatusFunc(f func() string) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.CartID = f
+		o.Status = f
 	})
 }
 
 // Clear any values for the column
-func (m orderMods) UnsetCartID() OrderMod {
+func (m orderMods) UnsetStatus() OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.CartID = nil
+		o.Status = nil
 	})
 }
 
 // Generates a random value for the column using the given faker
 // if faker is nil, a default faker is used
-func (m orderMods) RandomCartID(f *faker.Faker) OrderMod {
+func (m orderMods) RandomStatus(f *faker.Faker) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.CartID = func() string {
-			return random_string(f, "50")
+		o.Status = func() string {
+			return random_string(f, "20")
 		}
 	})
 }
 
 // Set the model columns to this value
-func (m orderMods) Amount(val decimal.Decimal) OrderMod {
+func (m orderMods) DiscountValue(val decimal.Decimal) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.Amount = func() decimal.Decimal { return val }
+		o.DiscountValue = func() decimal.Decimal { return val }
 	})
 }
 
 // Set the Column from the function
-func (m orderMods) AmountFunc(f func() decimal.Decimal) OrderMod {
+func (m orderMods) DiscountValueFunc(f func() decimal.Decimal) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.Amount = f
+		o.DiscountValue = f
 	})
 }
 
 // Clear any values for the column
-func (m orderMods) UnsetAmount() OrderMod {
+func (m orderMods) UnsetDiscountValue() OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.Amount = nil
+		o.DiscountValue = nil
 	})
 }
 
 // Generates a random value for the column using the given faker
 // if faker is nil, a default faker is used
-func (m orderMods) RandomAmount(f *faker.Faker) OrderMod {
+func (m orderMods) RandomDiscountValue(f *faker.Faker) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.Amount = func() decimal.Decimal {
+		o.DiscountValue = func() decimal.Decimal {
 			return random_decimal_Decimal(f, "10", "2")
 		}
 	})
 }
 
 // Set the model columns to this value
-func (m orderMods) DelieveryAddress(val string) OrderMod {
+func (m orderMods) DiscountType(val string) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.DelieveryAddress = func() string { return val }
+		o.DiscountType = func() string { return val }
 	})
 }
 
 // Set the Column from the function
-func (m orderMods) DelieveryAddressFunc(f func() string) OrderMod {
+func (m orderMods) DiscountTypeFunc(f func() string) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.DelieveryAddress = f
+		o.DiscountType = f
 	})
 }
 
 // Clear any values for the column
-func (m orderMods) UnsetDelieveryAddress() OrderMod {
+func (m orderMods) UnsetDiscountType() OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.DelieveryAddress = nil
+		o.DiscountType = nil
 	})
 }
 
 // Generates a random value for the column using the given faker
 // if faker is nil, a default faker is used
-func (m orderMods) RandomDelieveryAddress(f *faker.Faker) OrderMod {
+func (m orderMods) RandomDiscountType(f *faker.Faker) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
-		o.DelieveryAddress = func() string {
+		o.DiscountType = func() string {
+			return random_string(f, "20")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) GrossAmount(val decimal.Decimal) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.GrossAmount = func() decimal.Decimal { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) GrossAmountFunc(f func() decimal.Decimal) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.GrossAmount = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetGrossAmount() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.GrossAmount = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomGrossAmount(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.GrossAmount = func() decimal.Decimal {
+			return random_decimal_Decimal(f, "10", "2")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) NetAmount(val decimal.Decimal) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.NetAmount = func() decimal.Decimal { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) NetAmountFunc(f func() decimal.Decimal) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.NetAmount = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetNetAmount() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.NetAmount = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomNetAmount(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.NetAmount = func() decimal.Decimal {
+			return random_decimal_Decimal(f, "10", "2")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) ShippingAddress(val types.JSON[json.RawMessage]) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingAddress = func() types.JSON[json.RawMessage] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) ShippingAddressFunc(f func() types.JSON[json.RawMessage]) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingAddress = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetShippingAddress() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingAddress = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomShippingAddress(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingAddress = func() types.JSON[json.RawMessage] {
+			return random_types_JSON_json_RawMessage_(f)
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) ShippingCity(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingCity = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) ShippingCityFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingCity = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetShippingCity() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingCity = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomShippingCity(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingCity = func() string {
 			return random_string(f, "255")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) ShippingState(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingState = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) ShippingStateFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingState = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetShippingState() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingState = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomShippingState(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingState = func() string {
+			return random_string(f, "255")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) ShippingPincode(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingPincode = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) ShippingPincodeFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingPincode = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetShippingPincode() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingPincode = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomShippingPincode(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.ShippingPincode = func() string {
+			return random_string(f, "10")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) PaymentStatus(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentStatus = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) PaymentStatusFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentStatus = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetPaymentStatus() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentStatus = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomPaymentStatus(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentStatus = func() string {
+			return random_string(f, "20")
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m orderMods) PaymentMethod(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentMethod = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) PaymentMethodFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentMethod = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetPaymentMethod() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentMethod = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomPaymentMethod(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.PaymentMethod = func() string {
+			return random_string(f, "20")
 		}
 	})
 }
@@ -575,44 +884,9 @@ func (m orderMods) WithParentsCascading() OrderMod {
 		ctx = orderWithParentsCascadingCtx.WithValue(ctx, true)
 		{
 
-			related := o.f.NewCartWithContext(ctx, CartMods.WithParentsCascading())
-			m.WithCart(related).Apply(ctx, o)
-		}
-		{
-
 			related := o.f.NewUserWithContext(ctx, UserMods.WithParentsCascading())
 			m.WithUser(related).Apply(ctx, o)
 		}
-	})
-}
-
-func (m orderMods) WithCart(rel *CartTemplate) OrderMod {
-	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
-		o.r.Cart = &orderRCartR{
-			o: rel,
-		}
-	})
-}
-
-func (m orderMods) WithNewCart(mods ...CartMod) OrderMod {
-	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
-		related := o.f.NewCartWithContext(ctx, mods...)
-
-		m.WithCart(related).Apply(ctx, o)
-	})
-}
-
-func (m orderMods) WithExistingCart(em *models.Cart) OrderMod {
-	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
-		o.r.Cart = &orderRCartR{
-			o: o.f.FromExistingCart(em),
-		}
-	})
-}
-
-func (m orderMods) WithoutCart() OrderMod {
-	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
-		o.r.Cart = nil
 	})
 }
 

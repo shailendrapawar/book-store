@@ -33,17 +33,35 @@ var Orders = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		CartID: column{
-			Name:      "cart_id",
+		Status: column{
+			Name:      "status",
 			DBType:    "character varying",
-			Default:   "",
+			Default:   "'pending'::character varying",
 			Comment:   "",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
 		},
-		Amount: column{
-			Name:      "amount",
+		DiscountValue: column{
+			Name:      "discount_value",
+			DBType:    "numeric",
+			Default:   "0",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		DiscountType: column{
+			Name:      "discount_type",
+			DBType:    "character varying",
+			Default:   "'fixed'::character varying",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		GrossAmount: column{
+			Name:      "gross_amount",
 			DBType:    "numeric",
 			Default:   "",
 			Comment:   "",
@@ -51,8 +69,62 @@ var Orders = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		DelieveryAddress: column{
-			Name:      "delievery_address",
+		NetAmount: column{
+			Name:      "net_amount",
+			DBType:    "numeric",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		ShippingAddress: column{
+			Name:      "shipping_address",
+			DBType:    "jsonb",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		ShippingCity: column{
+			Name:      "shipping_city",
+			DBType:    "character varying",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		ShippingState: column{
+			Name:      "shipping_state",
+			DBType:    "character varying",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		ShippingPincode: column{
+			Name:      "shipping_pincode",
+			DBType:    "character varying",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		PaymentStatus: column{
+			Name:      "payment_status",
+			DBType:    "character varying",
+			Default:   "'pending'::character varying",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		PaymentMethod: column{
+			Name:      "payment_method",
 			DBType:    "character varying",
 			Default:   "",
 			Comment:   "",
@@ -104,15 +176,6 @@ var Orders = Table[
 		Comment: "",
 	},
 	ForeignKeys: orderForeignKeys{
-		OrdersOrdersCartIDFkey: foreignKey{
-			constraint: constraint{
-				Name:    "orders.orders_cart_id_fkey",
-				Columns: []string{"cart_id"},
-				Comment: "",
-			},
-			ForeignTable:   "carts",
-			ForeignColumns: []string{"id"},
-		},
 		OrdersOrdersUserIDFkey: foreignKey{
 			constraint: constraint{
 				Name:    "orders.orders_user_id_fkey",
@@ -125,31 +188,95 @@ var Orders = Table[
 	},
 
 	Checks: orderChecks{
-		OrdersAmountCheck: check{
+		OrdersCheck: check{
 			constraint: constraint{
-				Name:    "orders_amount_check",
-				Columns: []string{"amount"},
+				Name:    "orders_check",
+				Columns: []string{"net_amount", "gross_amount"},
 				Comment: "",
 			},
-			Expression: "(amount > (0)::numeric)",
+			Expression: "(net_amount <= gross_amount)",
+		},
+		OrdersDiscountTypeCheck: check{
+			constraint: constraint{
+				Name:    "orders_discount_type_check",
+				Columns: []string{"discount_type"},
+				Comment: "",
+			},
+			Expression: "((discount_type)::text = ANY ((ARRAY['fixed'::character varying, 'percentage'::character varying])::text[]))",
+		},
+		OrdersDiscountValueCheck: check{
+			constraint: constraint{
+				Name:    "orders_discount_value_check",
+				Columns: []string{"discount_value"},
+				Comment: "",
+			},
+			Expression: "(discount_value >= (0)::numeric)",
+		},
+		OrdersGrossAmountCheck: check{
+			constraint: constraint{
+				Name:    "orders_gross_amount_check",
+				Columns: []string{"gross_amount"},
+				Comment: "",
+			},
+			Expression: "(gross_amount > (0)::numeric)",
+		},
+		OrdersNetAmountCheck: check{
+			constraint: constraint{
+				Name:    "orders_net_amount_check",
+				Columns: []string{"net_amount"},
+				Comment: "",
+			},
+			Expression: "(net_amount > (0)::numeric)",
+		},
+		OrdersPaymentMethodCheck: check{
+			constraint: constraint{
+				Name:    "orders_payment_method_check",
+				Columns: []string{"payment_method"},
+				Comment: "",
+			},
+			Expression: "((payment_method)::text = ANY ((ARRAY['cod'::character varying, 'online'::character varying])::text[]))",
+		},
+		OrdersPaymentStatusCheck: check{
+			constraint: constraint{
+				Name:    "orders_payment_status_check",
+				Columns: []string{"payment_status"},
+				Comment: "",
+			},
+			Expression: "((payment_status)::text = ANY ((ARRAY['pending'::character varying, 'paid'::character varying, 'failed'::character varying])::text[]))",
+		},
+		OrdersStatusCheck: check{
+			constraint: constraint{
+				Name:    "orders_status_check",
+				Columns: []string{"status"},
+				Comment: "",
+			},
+			Expression: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying, 'shipped'::character varying, 'delivered'::character varying, 'cancelled'::character varying])::text[]))",
 		},
 	},
 	Comment: "",
 }
 
 type orderColumns struct {
-	ID               column
-	UserID           column
-	CartID           column
-	Amount           column
-	DelieveryAddress column
-	CreatedAt        column
-	UpdatedAt        column
+	ID              column
+	UserID          column
+	Status          column
+	DiscountValue   column
+	DiscountType    column
+	GrossAmount     column
+	NetAmount       column
+	ShippingAddress column
+	ShippingCity    column
+	ShippingState   column
+	ShippingPincode column
+	PaymentStatus   column
+	PaymentMethod   column
+	CreatedAt       column
+	UpdatedAt       column
 }
 
 func (c orderColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.CartID, c.Amount, c.DelieveryAddress, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.UserID, c.Status, c.DiscountValue, c.DiscountType, c.GrossAmount, c.NetAmount, c.ShippingAddress, c.ShippingCity, c.ShippingState, c.ShippingPincode, c.PaymentStatus, c.PaymentMethod, c.CreatedAt, c.UpdatedAt,
 	}
 }
 
@@ -164,13 +291,12 @@ func (i orderIndexes) AsSlice() []index {
 }
 
 type orderForeignKeys struct {
-	OrdersOrdersCartIDFkey foreignKey
 	OrdersOrdersUserIDFkey foreignKey
 }
 
 func (f orderForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.OrdersOrdersCartIDFkey, f.OrdersOrdersUserIDFkey,
+		f.OrdersOrdersUserIDFkey,
 	}
 }
 
@@ -181,11 +307,18 @@ func (u orderUniques) AsSlice() []constraint {
 }
 
 type orderChecks struct {
-	OrdersAmountCheck check
+	OrdersCheck              check
+	OrdersDiscountTypeCheck  check
+	OrdersDiscountValueCheck check
+	OrdersGrossAmountCheck   check
+	OrdersNetAmountCheck     check
+	OrdersPaymentMethodCheck check
+	OrdersPaymentStatusCheck check
+	OrdersStatusCheck        check
 }
 
 func (c orderChecks) AsSlice() []check {
 	return []check{
-		c.OrdersAmountCheck,
+		c.OrdersCheck, c.OrdersDiscountTypeCheck, c.OrdersDiscountValueCheck, c.OrdersGrossAmountCheck, c.OrdersNetAmountCheck, c.OrdersPaymentMethodCheck, c.OrdersPaymentStatusCheck, c.OrdersStatusCheck,
 	}
 }

@@ -5,6 +5,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -20,18 +21,27 @@ import (
 	"github.com/stephenafamo/bob/expr"
 	"github.com/stephenafamo/bob/mods"
 	"github.com/stephenafamo/bob/orm"
+	"github.com/stephenafamo/bob/types"
 	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // Order is an object representing the database table.
 type Order struct {
-	ID               string          `db:"id,pk" `
-	UserID           string          `db:"user_id" `
-	CartID           string          `db:"cart_id" `
-	Amount           decimal.Decimal `db:"amount" `
-	DelieveryAddress string          `db:"delievery_address" `
-	CreatedAt        time.Time       `db:"created_at" `
-	UpdatedAt        time.Time       `db:"updated_at" `
+	ID              string                      `db:"id,pk" `
+	UserID          string                      `db:"user_id" `
+	Status          string                      `db:"status" `
+	DiscountValue   decimal.Decimal             `db:"discount_value" `
+	DiscountType    string                      `db:"discount_type" `
+	GrossAmount     decimal.Decimal             `db:"gross_amount" `
+	NetAmount       decimal.Decimal             `db:"net_amount" `
+	ShippingAddress types.JSON[json.RawMessage] `db:"shipping_address" `
+	ShippingCity    string                      `db:"shipping_city" `
+	ShippingState   string                      `db:"shipping_state" `
+	ShippingPincode string                      `db:"shipping_pincode" `
+	PaymentStatus   string                      `db:"payment_status" `
+	PaymentMethod   string                      `db:"payment_method" `
+	CreatedAt       time.Time                   `db:"created_at" `
+	UpdatedAt       time.Time                   `db:"updated_at" `
 
 	R orderR `db:"-" `
 }
@@ -48,36 +58,51 @@ type OrdersQuery = *psql.ViewQuery[*Order, OrderSlice]
 
 // orderR is where relationships are stored.
 type orderR struct {
-	Cart *Cart // orders.orders_cart_id_fkey
 	User *User // orders.orders_user_id_fkey
 }
 
 func buildOrderColumns(alias string) orderColumns {
 	return orderColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "cart_id", "amount", "delievery_address", "created_at", "updated_at",
+			"id", "user_id", "status", "discount_value", "discount_type", "gross_amount", "net_amount", "shipping_address", "shipping_city", "shipping_state", "shipping_pincode", "payment_status", "payment_method", "created_at", "updated_at",
 		).WithParent("orders"),
-		tableAlias:       alias,
-		ID:               psql.Quote(alias, "id"),
-		UserID:           psql.Quote(alias, "user_id"),
-		CartID:           psql.Quote(alias, "cart_id"),
-		Amount:           psql.Quote(alias, "amount"),
-		DelieveryAddress: psql.Quote(alias, "delievery_address"),
-		CreatedAt:        psql.Quote(alias, "created_at"),
-		UpdatedAt:        psql.Quote(alias, "updated_at"),
+		tableAlias:      alias,
+		ID:              psql.Quote(alias, "id"),
+		UserID:          psql.Quote(alias, "user_id"),
+		Status:          psql.Quote(alias, "status"),
+		DiscountValue:   psql.Quote(alias, "discount_value"),
+		DiscountType:    psql.Quote(alias, "discount_type"),
+		GrossAmount:     psql.Quote(alias, "gross_amount"),
+		NetAmount:       psql.Quote(alias, "net_amount"),
+		ShippingAddress: psql.Quote(alias, "shipping_address"),
+		ShippingCity:    psql.Quote(alias, "shipping_city"),
+		ShippingState:   psql.Quote(alias, "shipping_state"),
+		ShippingPincode: psql.Quote(alias, "shipping_pincode"),
+		PaymentStatus:   psql.Quote(alias, "payment_status"),
+		PaymentMethod:   psql.Quote(alias, "payment_method"),
+		CreatedAt:       psql.Quote(alias, "created_at"),
+		UpdatedAt:       psql.Quote(alias, "updated_at"),
 	}
 }
 
 type orderColumns struct {
 	expr.ColumnsExpr
-	tableAlias       string
-	ID               psql.Expression
-	UserID           psql.Expression
-	CartID           psql.Expression
-	Amount           psql.Expression
-	DelieveryAddress psql.Expression
-	CreatedAt        psql.Expression
-	UpdatedAt        psql.Expression
+	tableAlias      string
+	ID              psql.Expression
+	UserID          psql.Expression
+	Status          psql.Expression
+	DiscountValue   psql.Expression
+	DiscountType    psql.Expression
+	GrossAmount     psql.Expression
+	NetAmount       psql.Expression
+	ShippingAddress psql.Expression
+	ShippingCity    psql.Expression
+	ShippingState   psql.Expression
+	ShippingPincode psql.Expression
+	PaymentStatus   psql.Expression
+	PaymentMethod   psql.Expression
+	CreatedAt       psql.Expression
+	UpdatedAt       psql.Expression
 }
 
 func (c orderColumns) Alias() string {
@@ -92,31 +117,63 @@ func (orderColumns) AliasedAs(alias string) orderColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type OrderSetter struct {
-	ID               omit.Val[string]          `db:"id,pk" `
-	UserID           omit.Val[string]          `db:"user_id" `
-	CartID           omit.Val[string]          `db:"cart_id" `
-	Amount           omit.Val[decimal.Decimal] `db:"amount" `
-	DelieveryAddress omit.Val[string]          `db:"delievery_address" `
-	CreatedAt        omit.Val[time.Time]       `db:"created_at" `
-	UpdatedAt        omit.Val[time.Time]       `db:"updated_at" `
+	ID              omit.Val[string]                      `db:"id,pk" `
+	UserID          omit.Val[string]                      `db:"user_id" `
+	Status          omit.Val[string]                      `db:"status" `
+	DiscountValue   omit.Val[decimal.Decimal]             `db:"discount_value" `
+	DiscountType    omit.Val[string]                      `db:"discount_type" `
+	GrossAmount     omit.Val[decimal.Decimal]             `db:"gross_amount" `
+	NetAmount       omit.Val[decimal.Decimal]             `db:"net_amount" `
+	ShippingAddress omit.Val[types.JSON[json.RawMessage]] `db:"shipping_address" `
+	ShippingCity    omit.Val[string]                      `db:"shipping_city" `
+	ShippingState   omit.Val[string]                      `db:"shipping_state" `
+	ShippingPincode omit.Val[string]                      `db:"shipping_pincode" `
+	PaymentStatus   omit.Val[string]                      `db:"payment_status" `
+	PaymentMethod   omit.Val[string]                      `db:"payment_method" `
+	CreatedAt       omit.Val[time.Time]                   `db:"created_at" `
+	UpdatedAt       omit.Val[time.Time]                   `db:"updated_at" `
 }
 
 func (s OrderSetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 15)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
 	if s.UserID.IsValue() {
 		vals = append(vals, "user_id")
 	}
-	if s.CartID.IsValue() {
-		vals = append(vals, "cart_id")
+	if s.Status.IsValue() {
+		vals = append(vals, "status")
 	}
-	if s.Amount.IsValue() {
-		vals = append(vals, "amount")
+	if s.DiscountValue.IsValue() {
+		vals = append(vals, "discount_value")
 	}
-	if s.DelieveryAddress.IsValue() {
-		vals = append(vals, "delievery_address")
+	if s.DiscountType.IsValue() {
+		vals = append(vals, "discount_type")
+	}
+	if s.GrossAmount.IsValue() {
+		vals = append(vals, "gross_amount")
+	}
+	if s.NetAmount.IsValue() {
+		vals = append(vals, "net_amount")
+	}
+	if s.ShippingAddress.IsValue() {
+		vals = append(vals, "shipping_address")
+	}
+	if s.ShippingCity.IsValue() {
+		vals = append(vals, "shipping_city")
+	}
+	if s.ShippingState.IsValue() {
+		vals = append(vals, "shipping_state")
+	}
+	if s.ShippingPincode.IsValue() {
+		vals = append(vals, "shipping_pincode")
+	}
+	if s.PaymentStatus.IsValue() {
+		vals = append(vals, "payment_status")
+	}
+	if s.PaymentMethod.IsValue() {
+		vals = append(vals, "payment_method")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -134,14 +191,38 @@ func (s OrderSetter) Overwrite(t *Order) {
 	if s.UserID.IsValue() {
 		t.UserID = s.UserID.MustGet()
 	}
-	if s.CartID.IsValue() {
-		t.CartID = s.CartID.MustGet()
+	if s.Status.IsValue() {
+		t.Status = s.Status.MustGet()
 	}
-	if s.Amount.IsValue() {
-		t.Amount = s.Amount.MustGet()
+	if s.DiscountValue.IsValue() {
+		t.DiscountValue = s.DiscountValue.MustGet()
 	}
-	if s.DelieveryAddress.IsValue() {
-		t.DelieveryAddress = s.DelieveryAddress.MustGet()
+	if s.DiscountType.IsValue() {
+		t.DiscountType = s.DiscountType.MustGet()
+	}
+	if s.GrossAmount.IsValue() {
+		t.GrossAmount = s.GrossAmount.MustGet()
+	}
+	if s.NetAmount.IsValue() {
+		t.NetAmount = s.NetAmount.MustGet()
+	}
+	if s.ShippingAddress.IsValue() {
+		t.ShippingAddress = s.ShippingAddress.MustGet()
+	}
+	if s.ShippingCity.IsValue() {
+		t.ShippingCity = s.ShippingCity.MustGet()
+	}
+	if s.ShippingState.IsValue() {
+		t.ShippingState = s.ShippingState.MustGet()
+	}
+	if s.ShippingPincode.IsValue() {
+		t.ShippingPincode = s.ShippingPincode.MustGet()
+	}
+	if s.PaymentStatus.IsValue() {
+		t.PaymentStatus = s.PaymentStatus.MustGet()
+	}
+	if s.PaymentMethod.IsValue() {
+		t.PaymentMethod = s.PaymentMethod.MustGet()
 	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
@@ -157,7 +238,7 @@ func (s *OrderSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 7)
+		vals := make([]bob.Expression, 15)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -170,34 +251,82 @@ func (s *OrderSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if s.CartID.IsValue() {
-			vals[2] = psql.Arg(s.CartID.MustGet())
+		if s.Status.IsValue() {
+			vals[2] = psql.Arg(s.Status.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.Amount.IsValue() {
-			vals[3] = psql.Arg(s.Amount.MustGet())
+		if s.DiscountValue.IsValue() {
+			vals[3] = psql.Arg(s.DiscountValue.MustGet())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.DelieveryAddress.IsValue() {
-			vals[4] = psql.Arg(s.DelieveryAddress.MustGet())
+		if s.DiscountType.IsValue() {
+			vals[4] = psql.Arg(s.DiscountType.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[5] = psql.Arg(s.CreatedAt.MustGet())
+		if s.GrossAmount.IsValue() {
+			vals[5] = psql.Arg(s.GrossAmount.MustGet())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsValue() {
-			vals[6] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.NetAmount.IsValue() {
+			vals[6] = psql.Arg(s.NetAmount.MustGet())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
+		}
+
+		if s.ShippingAddress.IsValue() {
+			vals[7] = psql.Arg(s.ShippingAddress.MustGet())
+		} else {
+			vals[7] = psql.Raw("DEFAULT")
+		}
+
+		if s.ShippingCity.IsValue() {
+			vals[8] = psql.Arg(s.ShippingCity.MustGet())
+		} else {
+			vals[8] = psql.Raw("DEFAULT")
+		}
+
+		if s.ShippingState.IsValue() {
+			vals[9] = psql.Arg(s.ShippingState.MustGet())
+		} else {
+			vals[9] = psql.Raw("DEFAULT")
+		}
+
+		if s.ShippingPincode.IsValue() {
+			vals[10] = psql.Arg(s.ShippingPincode.MustGet())
+		} else {
+			vals[10] = psql.Raw("DEFAULT")
+		}
+
+		if s.PaymentStatus.IsValue() {
+			vals[11] = psql.Arg(s.PaymentStatus.MustGet())
+		} else {
+			vals[11] = psql.Raw("DEFAULT")
+		}
+
+		if s.PaymentMethod.IsValue() {
+			vals[12] = psql.Arg(s.PaymentMethod.MustGet())
+		} else {
+			vals[12] = psql.Raw("DEFAULT")
+		}
+
+		if s.CreatedAt.IsValue() {
+			vals[13] = psql.Arg(s.CreatedAt.MustGet())
+		} else {
+			vals[13] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsValue() {
+			vals[14] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[14] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -209,7 +338,7 @@ func (s OrderSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s OrderSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 15)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -225,24 +354,80 @@ func (s OrderSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if s.CartID.IsValue() {
+	if s.Status.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "cart_id")...),
-			psql.Arg(s.CartID),
+			psql.Quote(append(prefix, "status")...),
+			psql.Arg(s.Status),
 		}})
 	}
 
-	if s.Amount.IsValue() {
+	if s.DiscountValue.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "amount")...),
-			psql.Arg(s.Amount),
+			psql.Quote(append(prefix, "discount_value")...),
+			psql.Arg(s.DiscountValue),
 		}})
 	}
 
-	if s.DelieveryAddress.IsValue() {
+	if s.DiscountType.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "delievery_address")...),
-			psql.Arg(s.DelieveryAddress),
+			psql.Quote(append(prefix, "discount_type")...),
+			psql.Arg(s.DiscountType),
+		}})
+	}
+
+	if s.GrossAmount.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "gross_amount")...),
+			psql.Arg(s.GrossAmount),
+		}})
+	}
+
+	if s.NetAmount.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "net_amount")...),
+			psql.Arg(s.NetAmount),
+		}})
+	}
+
+	if s.ShippingAddress.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "shipping_address")...),
+			psql.Arg(s.ShippingAddress),
+		}})
+	}
+
+	if s.ShippingCity.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "shipping_city")...),
+			psql.Arg(s.ShippingCity),
+		}})
+	}
+
+	if s.ShippingState.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "shipping_state")...),
+			psql.Arg(s.ShippingState),
+		}})
+	}
+
+	if s.ShippingPincode.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "shipping_pincode")...),
+			psql.Arg(s.ShippingPincode),
+		}})
+	}
+
+	if s.PaymentStatus.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "payment_status")...),
+			psql.Arg(s.PaymentStatus),
+		}})
+	}
+
+	if s.PaymentMethod.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "payment_method")...),
+			psql.Arg(s.PaymentMethod),
 		}})
 	}
 
@@ -486,30 +671,6 @@ func (o OrderSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
-// Cart starts a query for related objects on carts
-func (o *Order) Cart(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
-	return Carts.Query(append(mods,
-		sm.Where(Carts.Columns.ID.EQ(psql.Arg(o.CartID))),
-	)...)
-}
-
-func (os OrderSlice) Cart(mods ...bob.Mod[*dialect.SelectQuery]) CartsQuery {
-	pkCartID := make(pgtypes.Array[string], 0, len(os))
-	for _, o := range os {
-		if o == nil {
-			continue
-		}
-		pkCartID = append(pkCartID, o.CartID)
-	}
-	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkCartID), "character varying[]")),
-	))
-
-	return Carts.Query(append(mods,
-		sm.Where(psql.Group(Carts.Columns.ID).OP("IN", PKArgExpr)),
-	)...)
-}
-
 // User starts a query for related objects on users
 func (o *Order) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
 	return Users.Query(append(mods,
@@ -532,54 +693,6 @@ func (os OrderSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
 	return Users.Query(append(mods,
 		sm.Where(psql.Group(Users.Columns.ID).OP("IN", PKArgExpr)),
 	)...)
-}
-
-func attachOrderCart0(ctx context.Context, exec bob.Executor, count int, order0 *Order, cart1 *Cart) (*Order, error) {
-	setter := &OrderSetter{
-		CartID: omit.From(cart1.ID),
-	}
-
-	err := order0.Update(ctx, exec, setter)
-	if err != nil {
-		return nil, fmt.Errorf("attachOrderCart0: %w", err)
-	}
-
-	return order0, nil
-}
-
-func (order0 *Order) InsertCart(ctx context.Context, exec bob.Executor, related *CartSetter) error {
-	var err error
-
-	cart1, err := Carts.Insert(related).One(ctx, exec)
-	if err != nil {
-		return fmt.Errorf("inserting related objects: %w", err)
-	}
-
-	_, err = attachOrderCart0(ctx, exec, 1, order0, cart1)
-	if err != nil {
-		return err
-	}
-
-	order0.R.Cart = cart1
-
-	cart1.R.Orders = append(cart1.R.Orders, order0)
-
-	return nil
-}
-
-func (order0 *Order) AttachCart(ctx context.Context, exec bob.Executor, cart1 *Cart) error {
-	var err error
-
-	_, err = attachOrderCart0(ctx, exec, 1, order0, cart1)
-	if err != nil {
-		return err
-	}
-
-	order0.R.Cart = cart1
-
-	cart1.R.Orders = append(cart1.R.Orders, order0)
-
-	return nil
 }
 
 func attachOrderUser0(ctx context.Context, exec bob.Executor, count int, order0 *Order, user1 *User) (*Order, error) {
@@ -631,13 +744,21 @@ func (order0 *Order) AttachUser(ctx context.Context, exec bob.Executor, user1 *U
 }
 
 type orderWhere[Q psql.Filterable] struct {
-	ID               psql.WhereMod[Q, string]
-	UserID           psql.WhereMod[Q, string]
-	CartID           psql.WhereMod[Q, string]
-	Amount           psql.WhereMod[Q, decimal.Decimal]
-	DelieveryAddress psql.WhereMod[Q, string]
-	CreatedAt        psql.WhereMod[Q, time.Time]
-	UpdatedAt        psql.WhereMod[Q, time.Time]
+	ID              psql.WhereMod[Q, string]
+	UserID          psql.WhereMod[Q, string]
+	Status          psql.WhereMod[Q, string]
+	DiscountValue   psql.WhereMod[Q, decimal.Decimal]
+	DiscountType    psql.WhereMod[Q, string]
+	GrossAmount     psql.WhereMod[Q, decimal.Decimal]
+	NetAmount       psql.WhereMod[Q, decimal.Decimal]
+	ShippingAddress psql.WhereMod[Q, types.JSON[json.RawMessage]]
+	ShippingCity    psql.WhereMod[Q, string]
+	ShippingState   psql.WhereMod[Q, string]
+	ShippingPincode psql.WhereMod[Q, string]
+	PaymentStatus   psql.WhereMod[Q, string]
+	PaymentMethod   psql.WhereMod[Q, string]
+	CreatedAt       psql.WhereMod[Q, time.Time]
+	UpdatedAt       psql.WhereMod[Q, time.Time]
 }
 
 func (orderWhere[Q]) AliasedAs(alias string) orderWhere[Q] {
@@ -646,13 +767,21 @@ func (orderWhere[Q]) AliasedAs(alias string) orderWhere[Q] {
 
 func buildOrderWhere[Q psql.Filterable](cols orderColumns) orderWhere[Q] {
 	return orderWhere[Q]{
-		ID:               psql.Where[Q, string](cols.ID),
-		UserID:           psql.Where[Q, string](cols.UserID),
-		CartID:           psql.Where[Q, string](cols.CartID),
-		Amount:           psql.Where[Q, decimal.Decimal](cols.Amount),
-		DelieveryAddress: psql.Where[Q, string](cols.DelieveryAddress),
-		CreatedAt:        psql.Where[Q, time.Time](cols.CreatedAt),
-		UpdatedAt:        psql.Where[Q, time.Time](cols.UpdatedAt),
+		ID:              psql.Where[Q, string](cols.ID),
+		UserID:          psql.Where[Q, string](cols.UserID),
+		Status:          psql.Where[Q, string](cols.Status),
+		DiscountValue:   psql.Where[Q, decimal.Decimal](cols.DiscountValue),
+		DiscountType:    psql.Where[Q, string](cols.DiscountType),
+		GrossAmount:     psql.Where[Q, decimal.Decimal](cols.GrossAmount),
+		NetAmount:       psql.Where[Q, decimal.Decimal](cols.NetAmount),
+		ShippingAddress: psql.Where[Q, types.JSON[json.RawMessage]](cols.ShippingAddress),
+		ShippingCity:    psql.Where[Q, string](cols.ShippingCity),
+		ShippingState:   psql.Where[Q, string](cols.ShippingState),
+		ShippingPincode: psql.Where[Q, string](cols.ShippingPincode),
+		PaymentStatus:   psql.Where[Q, string](cols.PaymentStatus),
+		PaymentMethod:   psql.Where[Q, string](cols.PaymentMethod),
+		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
+		UpdatedAt:       psql.Where[Q, time.Time](cols.UpdatedAt),
 	}
 }
 
@@ -662,18 +791,6 @@ func (o *Order) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
-	case "Cart":
-		rel, ok := retrieved.(*Cart)
-		if !ok {
-			return fmt.Errorf("order cannot load %T as %q", retrieved, name)
-		}
-
-		o.R.Cart = rel
-
-		if rel != nil {
-			rel.R.Orders = OrderSlice{o}
-		}
-		return nil
 	case "User":
 		rel, ok := retrieved.(*User)
 		if !ok {
@@ -692,25 +809,11 @@ func (o *Order) Preload(name string, retrieved any) error {
 }
 
 type orderPreloader struct {
-	Cart func(...psql.PreloadOption) psql.Preloader
 	User func(...psql.PreloadOption) psql.Preloader
 }
 
 func buildOrderPreloader() orderPreloader {
 	return orderPreloader{
-		Cart: func(opts ...psql.PreloadOption) psql.Preloader {
-			return psql.Preload[*Cart, CartSlice](psql.PreloadRel{
-				Name: "Cart",
-				Sides: []psql.PreloadSide{
-					{
-						From:        Orders,
-						To:          Carts,
-						FromColumns: []string{"cart_id"},
-						ToColumns:   []string{"id"},
-					},
-				},
-			}, Carts.Columns.Names(), opts...)
-		},
 		User: func(opts ...psql.PreloadOption) psql.Preloader {
 			return psql.Preload[*User, UserSlice](psql.PreloadRel{
 				Name: "User",
@@ -728,25 +831,15 @@ func buildOrderPreloader() orderPreloader {
 }
 
 type orderThenLoader[Q orm.Loadable] struct {
-	Cart func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	User func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildOrderThenLoader[Q orm.Loadable]() orderThenLoader[Q] {
-	type CartLoadInterface interface {
-		LoadCart(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
-	}
 	type UserLoadInterface interface {
 		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return orderThenLoader[Q]{
-		Cart: thenLoadBuilder[Q](
-			"Cart",
-			func(ctx context.Context, exec bob.Executor, retrieved CartLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
-				return retrieved.LoadCart(ctx, exec, mods...)
-			},
-		),
 		User: thenLoadBuilder[Q](
 			"User",
 			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -754,58 +847,6 @@ func buildOrderThenLoader[Q orm.Loadable]() orderThenLoader[Q] {
 			},
 		),
 	}
-}
-
-// LoadCart loads the order's Cart into the .R struct
-func (o *Order) LoadCart(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
-	if o == nil {
-		return nil
-	}
-
-	// Reset the relationship
-	o.R.Cart = nil
-
-	related, err := o.Cart(mods...).One(ctx, exec)
-	if err != nil {
-		return err
-	}
-
-	related.R.Orders = OrderSlice{o}
-
-	o.R.Cart = related
-	return nil
-}
-
-// LoadCart loads the order's Cart into the .R struct
-func (os OrderSlice) LoadCart(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
-	if len(os) == 0 {
-		return nil
-	}
-
-	carts, err := os.Cart(mods...).All(ctx, exec)
-	if err != nil {
-		return err
-	}
-
-	for _, o := range os {
-		if o == nil {
-			continue
-		}
-
-		for _, rel := range carts {
-
-			if !(o.CartID == rel.ID) {
-				continue
-			}
-
-			rel.R.Orders = append(rel.R.Orders, o)
-
-			o.R.Cart = rel
-			break
-		}
-	}
-
-	return nil
 }
 
 // LoadUser loads the order's User into the .R struct
@@ -862,7 +903,6 @@ func (os OrderSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bo
 
 type orderJoins[Q dialect.Joinable] struct {
 	typ  string
-	Cart modAs[Q, cartColumns]
 	User modAs[Q, userColumns]
 }
 
@@ -873,20 +913,6 @@ func (j orderJoins[Q]) aliasedAs(alias string) orderJoins[Q] {
 func buildOrderJoins[Q dialect.Joinable](cols orderColumns, typ string) orderJoins[Q] {
 	return orderJoins[Q]{
 		typ: typ,
-		Cart: modAs[Q, cartColumns]{
-			c: Carts.Columns,
-			f: func(to cartColumns) bob.Mod[Q] {
-				mods := make(mods.QueryMods[Q], 0, 1)
-
-				{
-					mods = append(mods, dialect.Join[Q](typ, Carts.Name().As(to.Alias())).On(
-						to.ID.EQ(cols.CartID),
-					))
-				}
-
-				return mods
-			},
-		},
 		User: modAs[Q, userColumns]{
 			c: Users.Columns,
 			f: func(to userColumns) bob.Mod[Q] {

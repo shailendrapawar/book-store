@@ -47,7 +47,6 @@ type CartsQuery = *psql.ViewQuery[*Cart, CartSlice]
 type cartR struct {
 	CartItems CartItemSlice // cart_items.cart_items_cart_id_fkey
 	User      *User         // carts.carts_user_id_fkey
-	Orders    OrderSlice    // orders.orders_cart_id_fkey
 }
 
 func buildCartColumns(alias string) cartColumns {
@@ -488,30 +487,6 @@ func (os CartSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
 	)...)
 }
 
-// Orders starts a query for related objects on orders
-func (o *Cart) Orders(mods ...bob.Mod[*dialect.SelectQuery]) OrdersQuery {
-	return Orders.Query(append(mods,
-		sm.Where(Orders.Columns.CartID.EQ(psql.Arg(o.ID))),
-	)...)
-}
-
-func (os CartSlice) Orders(mods ...bob.Mod[*dialect.SelectQuery]) OrdersQuery {
-	pkID := make(pgtypes.Array[string], 0, len(os))
-	for _, o := range os {
-		if o == nil {
-			continue
-		}
-		pkID = append(pkID, o.ID)
-	}
-	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
-	))
-
-	return Orders.Query(append(mods,
-		sm.Where(psql.Group(Orders.Columns.CartID).OP("IN", PKArgExpr)),
-	)...)
-}
-
 func insertCartCartItems0(ctx context.Context, exec bob.Executor, cartItems1 []*CartItemSetter, cart0 *Cart) (CartItemSlice, error) {
 	for i := range cartItems1 {
 		cartItems1[i].CartID = omit.From(cart0.ID)
@@ -628,74 +603,6 @@ func (cart0 *Cart) AttachUser(ctx context.Context, exec bob.Executor, user1 *Use
 	return nil
 }
 
-func insertCartOrders0(ctx context.Context, exec bob.Executor, orders1 []*OrderSetter, cart0 *Cart) (OrderSlice, error) {
-	for i := range orders1 {
-		orders1[i].CartID = omit.From(cart0.ID)
-	}
-
-	ret, err := Orders.Insert(bob.ToMods(orders1...)).All(ctx, exec)
-	if err != nil {
-		return ret, fmt.Errorf("insertCartOrders0: %w", err)
-	}
-
-	return ret, nil
-}
-
-func attachCartOrders0(ctx context.Context, exec bob.Executor, count int, orders1 OrderSlice, cart0 *Cart) (OrderSlice, error) {
-	setter := &OrderSetter{
-		CartID: omit.From(cart0.ID),
-	}
-
-	err := orders1.UpdateAll(ctx, exec, *setter)
-	if err != nil {
-		return nil, fmt.Errorf("attachCartOrders0: %w", err)
-	}
-
-	return orders1, nil
-}
-
-func (cart0 *Cart) InsertOrders(ctx context.Context, exec bob.Executor, related ...*OrderSetter) error {
-	if len(related) == 0 {
-		return nil
-	}
-
-	var err error
-
-	orders1, err := insertCartOrders0(ctx, exec, related, cart0)
-	if err != nil {
-		return err
-	}
-
-	cart0.R.Orders = append(cart0.R.Orders, orders1...)
-
-	for _, rel := range orders1 {
-		rel.R.Cart = cart0
-	}
-	return nil
-}
-
-func (cart0 *Cart) AttachOrders(ctx context.Context, exec bob.Executor, related ...*Order) error {
-	if len(related) == 0 {
-		return nil
-	}
-
-	var err error
-	orders1 := OrderSlice(related)
-
-	_, err = attachCartOrders0(ctx, exec, len(related), orders1, cart0)
-	if err != nil {
-		return err
-	}
-
-	cart0.R.Orders = append(cart0.R.Orders, orders1...)
-
-	for _, rel := range related {
-		rel.R.Cart = cart0
-	}
-
-	return nil
-}
-
 type cartWhere[Q psql.Filterable] struct {
 	ID        psql.WhereMod[Q, string]
 	UserID    psql.WhereMod[Q, string]
@@ -750,20 +657,6 @@ func (o *Cart) Preload(name string, retrieved any) error {
 			rel.R.Carts = CartSlice{o}
 		}
 		return nil
-	case "Orders":
-		rels, ok := retrieved.(OrderSlice)
-		if !ok {
-			return fmt.Errorf("cart cannot load %T as %q", retrieved, name)
-		}
-
-		o.R.Orders = rels
-
-		for _, rel := range rels {
-			if rel != nil {
-				rel.R.Cart = o
-			}
-		}
-		return nil
 	default:
 		return fmt.Errorf("cart has no relationship %q", name)
 	}
@@ -794,7 +687,6 @@ func buildCartPreloader() cartPreloader {
 type cartThenLoader[Q orm.Loadable] struct {
 	CartItems func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	User      func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
-	Orders    func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildCartThenLoader[Q orm.Loadable]() cartThenLoader[Q] {
@@ -803,9 +695,6 @@ func buildCartThenLoader[Q orm.Loadable]() cartThenLoader[Q] {
 	}
 	type UserLoadInterface interface {
 		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
-	}
-	type OrdersLoadInterface interface {
-		LoadOrders(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return cartThenLoader[Q]{
@@ -819,12 +708,6 @@ func buildCartThenLoader[Q orm.Loadable]() cartThenLoader[Q] {
 			"User",
 			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadUser(ctx, exec, mods...)
-			},
-		),
-		Orders: thenLoadBuilder[Q](
-			"Orders",
-			func(ctx context.Context, exec bob.Executor, retrieved OrdersLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
-				return retrieved.LoadOrders(ctx, exec, mods...)
 			},
 		),
 	}
@@ -943,72 +826,10 @@ func (os CartSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob
 	return nil
 }
 
-// LoadOrders loads the cart's Orders into the .R struct
-func (o *Cart) LoadOrders(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
-	if o == nil {
-		return nil
-	}
-
-	// Reset the relationship
-	o.R.Orders = nil
-
-	related, err := o.Orders(mods...).All(ctx, exec)
-	if err != nil {
-		return err
-	}
-
-	for _, rel := range related {
-		rel.R.Cart = o
-	}
-
-	o.R.Orders = related
-	return nil
-}
-
-// LoadOrders loads the cart's Orders into the .R struct
-func (os CartSlice) LoadOrders(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
-	if len(os) == 0 {
-		return nil
-	}
-
-	orders, err := os.Orders(mods...).All(ctx, exec)
-	if err != nil {
-		return err
-	}
-
-	for _, o := range os {
-		if o == nil {
-			continue
-		}
-
-		o.R.Orders = nil
-	}
-
-	for _, o := range os {
-		if o == nil {
-			continue
-		}
-
-		for _, rel := range orders {
-
-			if !(o.ID == rel.CartID) {
-				continue
-			}
-
-			rel.R.Cart = o
-
-			o.R.Orders = append(o.R.Orders, rel)
-		}
-	}
-
-	return nil
-}
-
 type cartJoins[Q dialect.Joinable] struct {
 	typ       string
 	CartItems modAs[Q, cartItemColumns]
 	User      modAs[Q, userColumns]
-	Orders    modAs[Q, orderColumns]
 }
 
 func (j cartJoins[Q]) aliasedAs(alias string) cartJoins[Q] {
@@ -1040,20 +861,6 @@ func buildCartJoins[Q dialect.Joinable](cols cartColumns, typ string) cartJoins[
 				{
 					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
 						to.ID.EQ(cols.UserID),
-					))
-				}
-
-				return mods
-			},
-		},
-		Orders: modAs[Q, orderColumns]{
-			c: Orders.Columns,
-			f: func(to orderColumns) bob.Mod[Q] {
-				mods := make(mods.QueryMods[Q], 0, 1)
-
-				{
-					mods = append(mods, dialect.Join[Q](typ, Orders.Name().As(to.Alias())).On(
-						to.CartID.EQ(cols.ID),
 					))
 				}
 

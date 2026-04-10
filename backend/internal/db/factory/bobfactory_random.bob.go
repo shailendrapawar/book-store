@@ -4,12 +4,16 @@
 package factory
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jaswdr/faker/v2"
 	"github.com/shopspring/decimal"
+	"github.com/stephenafamo/bob/types"
 )
 
 var defaultFaker = faker.New()
@@ -86,4 +90,21 @@ func random_time_Time(f *faker.Faker, limits ...string) time.Time {
 	min := time.Now().Add(-year)
 	max := time.Now().Add(year)
 	return f.Time().TimeBetween(min, max)
+}
+
+func random_types_JSON_json_RawMessage_(f *faker.Faker, limits ...string) types.JSON[json.RawMessage] {
+	if f == nil {
+		f = &defaultFaker
+	}
+
+	s := &bytes.Buffer{}
+	s.WriteRune('{')
+	for i := range f.IntBetween(1, 5) {
+		if i > 0 {
+			fmt.Fprint(s, ", ")
+		}
+		fmt.Fprintf(s, "%q:%q", f.Lorem().Word(), f.Lorem().Word())
+	}
+	s.WriteRune('}')
+	return types.NewJSON[json.RawMessage](s.Bytes())
 }

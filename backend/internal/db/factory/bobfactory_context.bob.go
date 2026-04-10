@@ -25,11 +25,9 @@ var (
 	cartWithParentsCascadingCtx = newContextual[bool]("cartWithParentsCascading")
 	cartRelCartItemsCtx         = newContextual[bool]("cart_items.carts.cart_items.cart_items_cart_id_fkey")
 	cartRelUserCtx              = newContextual[bool]("carts.users.carts.carts_user_id_fkey")
-	cartRelOrdersCtx            = newContextual[bool]("carts.orders.orders.orders_cart_id_fkey")
 
 	// Relationship Contexts for orders
 	orderWithParentsCascadingCtx = newContextual[bool]("orderWithParentsCascading")
-	orderRelCartCtx              = newContextual[bool]("carts.orders.orders.orders_cart_id_fkey")
 	orderRelUserCtx              = newContextual[bool]("orders.users.orders.orders_user_id_fkey")
 
 	// Relationship Contexts for users

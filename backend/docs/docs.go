@@ -950,8 +950,8 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "home",
-                        "work",
-                        "other"
+                        "office",
+                        "roaming"
                     ]
                 },
                 "city": {
