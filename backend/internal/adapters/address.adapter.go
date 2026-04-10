@@ -27,11 +27,11 @@ type CreateAddressRequest struct {
 }
 
 type SearchAddressFilters struct {
-	UserID    *string `json:"user_id"`
-	State     *string `json:"state"`
-	City      *string `json:"city"`
-	District  *string `json:"district"`
-	IsDeleted *bool   `json:"is_deleted"`
+	UserID   *string `json:"user_id"`
+	State    *string `json:"state"`
+	City     *string `json:"city"`
+	District *string `json:"district"`
+	// IsDeleted *bool   `json:"is_deleted"`
 }
 
 type SearchAddressResponse struct {

@@ -84,9 +84,14 @@ func (c *addressControllerImpl) Search(ginContext *gin.Context) {
 
 	var filters adapters.SearchAddressFilters
 
-	if userID := ginContext.Query("userID"); userID != "" {
-		filters.UserID = &userID
+	var userID string
+
+	if userID = ginContext.Query("userID"); userID == "" {
+		utils.HandleErrorResponse(ginContext, 400, "Invalid id", nil)
+		return
 	}
+
+	filters.UserID = &userID
 	if state := ginContext.Query("state"); state != "" {
 		filters.State = &state
 	}
@@ -95,13 +100,6 @@ func (c *addressControllerImpl) Search(ginContext *gin.Context) {
 	}
 	if district := ginContext.Query("district"); district != "" {
 		filters.District = &district
-	}
-	if isDeleted := ginContext.Query("isDeleted"); isDeleted != "" {
-		val := false
-		if isDeleted == "true" {
-			val = true
-			filters.IsDeleted = &val
-		}
 	}
 
 	result, err := c.addressService.Search(requestContext, filters, pagination)

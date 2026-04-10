@@ -72,6 +72,9 @@ func (d *addressDaoImpl) Search(ctx context.Context, filters adapters.SearchAddr
 	mods = append(mods, sm.Limit(pagination.Limit))
 	mods = append(mods, sm.Offset(pagination.Offset))
 
+	//necessary filters
+	mods = append(mods, models.SelectWhere.Addresses.IsDeleted.EQ(false))
+
 	//filters
 	if filters.UserID != nil {
 		mods = append(mods, models.SelectWhere.Addresses.UserID.EQ(*filters.UserID))
@@ -85,9 +88,9 @@ func (d *addressDaoImpl) Search(ctx context.Context, filters adapters.SearchAddr
 	if filters.District != nil {
 		mods = append(mods, models.SelectWhere.Addresses.District.EQ(*filters.District))
 	}
-	if filters.IsDeleted != nil {
-		mods = append(mods, models.SelectWhere.Addresses.IsDeleted.EQ(*filters.IsDeleted))
-	}
+	// if filters.IsDeleted != nil {
+	// 	mods = append(mods, models.SelectWhere.Addresses.IsDeleted.EQ(*filters.IsDeleted))
+	// }
 
 	result, err := models.Addresses.Query(mods...).All(ctx, d.db)
 
