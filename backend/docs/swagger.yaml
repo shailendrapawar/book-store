@@ -180,6 +180,10 @@ definitions:
   adapters.UpdateAddressRequest:
     properties:
       address_type:
+        enum:
+        - home
+        - work
+        - other
         type: string
       city:
         type: string
@@ -197,14 +201,6 @@ definitions:
         type: string
       state:
         type: string
-    required:
-    - address_type
-    - city
-    - country
-    - district
-    - line1
-    - pincode
-    - state
     type: object
   adapters.UpdateBookRequest:
     properties:
@@ -275,10 +271,6 @@ paths:
       description: Search addresses with filters like user, state, city, district,
         and deletion status
       parameters:
-      - description: User ID
-        in: query
-        name: userID
-        type: string
       - description: State
         example: Uttarakhand
         in: query
@@ -294,11 +286,6 @@ paths:
         in: query
         name: district
         type: string
-      - description: Is Deleted
-        example: false
-        in: query
-        name: isDeleted
-        type: boolean
       - description: Page number
         example: 1
         in: query
@@ -435,15 +422,21 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
+            allOf:
+            - $ref: '#/definitions/utils.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/utils.ErrorResponse'
+            allOf:
+            - $ref: '#/definitions/utils.ErrorResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
       summary: Update address
       tags:
       - Address

@@ -25,12 +25,6 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "userID",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "example": "Uttarakhand",
                         "description": "State",
                         "name": "state",
@@ -48,13 +42,6 @@
                         "example": "nainital",
                         "description": "District",
                         "name": "district",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "example": false,
-                        "description": "Is Deleted",
-                        "name": "isDeleted",
                         "in": "query"
                     },
                     {
@@ -274,19 +261,37 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1085,18 +1090,14 @@
         },
         "adapters.UpdateAddressRequest": {
             "type": "object",
-            "required": [
-                "address_type",
-                "city",
-                "country",
-                "district",
-                "line1",
-                "pincode",
-                "state"
-            ],
             "properties": {
                 "address_type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "home",
+                        "work",
+                        "other"
+                    ]
                 },
                 "city": {
                     "type": "string"

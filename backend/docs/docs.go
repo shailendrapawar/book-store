@@ -31,12 +31,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "userID",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "example": "Uttarakhand",
                         "description": "State",
                         "name": "state",
@@ -54,13 +48,6 @@ const docTemplate = `{
                         "example": "nainital",
                         "description": "District",
                         "name": "district",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "example": false,
-                        "description": "Is Deleted",
-                        "name": "isDeleted",
                         "in": "query"
                     },
                     {
@@ -280,19 +267,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.ErrorResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1091,18 +1096,14 @@ const docTemplate = `{
         },
         "adapters.UpdateAddressRequest": {
             "type": "object",
-            "required": [
-                "address_type",
-                "city",
-                "country",
-                "district",
-                "line1",
-                "pincode",
-                "state"
-            ],
             "properties": {
                 "address_type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "home",
+                        "work",
+                        "other"
+                    ]
                 },
                 "city": {
                     "type": "string"

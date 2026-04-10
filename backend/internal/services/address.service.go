@@ -11,7 +11,7 @@ import (
 
 type AddressService interface {
 	Create(ctx context.Context, req *adapters.CreateAddressRequest) (*adapters.Address, error)
-	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error)
+	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest, user *adapters.Claims) (interface{}, error)
 	Get(ctx context.Context, id string) (*adapters.Address, error)
 	Update(ctx context.Context, id string, req *adapters.UpdateAddressRequest) (interface{}, error)
 }
@@ -48,7 +48,7 @@ func (s *addressServiceImpl) Create(ctx context.Context, req *adapters.CreateAdd
 	}, nil
 }
 
-func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error) {
+func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest, user *adapters.Claims) (interface{}, error) {
 
 	res, err := s.addressDAO.Search(ctx, filters, pagination)
 	if err != nil {
@@ -56,7 +56,6 @@ func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.Search
 	}
 
 	return res, nil
-
 }
 
 func (s *addressServiceImpl) Get(ctx context.Context, id string) (*adapters.Address, error) {

@@ -88,9 +88,6 @@ func (d *addressDaoImpl) Search(ctx context.Context, filters adapters.SearchAddr
 	if filters.District != nil {
 		mods = append(mods, models.SelectWhere.Addresses.District.EQ(*filters.District))
 	}
-	// if filters.IsDeleted != nil {
-	// 	mods = append(mods, models.SelectWhere.Addresses.IsDeleted.EQ(*filters.IsDeleted))
-	// }
 
 	result, err := models.Addresses.Query(mods...).All(ctx, d.db)
 
@@ -100,7 +97,7 @@ func (d *addressDaoImpl) Search(ctx context.Context, filters adapters.SearchAddr
 	var addresses []*adapters.Address
 
 	for _, v := range result {
-		a := &adapters.Address{
+		item := &adapters.Address{
 			Id:          v.ID,
 			UserID:      v.UserID,
 			AddressType: v.AddressesType,
@@ -113,7 +110,7 @@ func (d *addressDaoImpl) Search(ctx context.Context, filters adapters.SearchAddr
 			State:       v.State,
 			Country:     v.Country,
 		}
-		addresses = append(addresses, a)
+		addresses = append(addresses, item)
 	}
 
 	return addresses, nil

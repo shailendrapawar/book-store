@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/config"
+	"github.com/shailendrapawar/book-store/internal/middlewares"
 	"github.com/shailendrapawar/book-store/internal/services"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
@@ -65,11 +66,9 @@ func (c *addressControllerImpl) Create(ginContext *gin.Context) {
 // @Tags         Address
 // @Accept       json
 // @Produce      json
-// @Param        userID     query     string  false  "User ID"
 // @Param        state      query     string  false  "State"     example(Uttarakhand)
 // @Param        city       query     string  false  "City"      example(Haldwani)
 // @Param        district   query     string  false  "District"  example(nainital)
-// @Param        isDeleted  query     bool    false  "Is Deleted" example(false)
 // @Param        page       query     int     false  "Page number"     example(1)
 // @Param        limit      query     int     false  "Items per page"  example(10)
 // @Success      200        {object}  utils.SuccessResponse{data=[]adapters.Address}
@@ -84,25 +83,19 @@ func (c *addressControllerImpl) Search(ginContext *gin.Context) {
 
 	var filters adapters.SearchAddressFilters
 
-	var userID string
+	user := middlewares.GetUserFromCTX(requestContext)
 
-	if userID = ginContext.Query("userID"); userID == "" {
+	if user == nil || user.UserID == "" {
 		utils.HandleErrorResponse(ginContext, 400, "Invalid id", nil)
 		return
 	}
 
-	filters.UserID = &userID
-	if state := ginContext.Query("state"); state != "" {
-		filters.State = &state
-	}
-	if city := ginContext.Query("city"); city != "" {
-		filters.City = &city
-	}
-	if district := ginContext.Query("district"); district != "" {
-		filters.District = &district
-	}
+	// filters.UserID = utils.Ptr(user.UserID)
+	id := user.UserID
+	filters.UserID = &id
 
-	result, err := c.addressService.Search(requestContext, filters, pagination)
+	result, err := c.addressService.Search(requestContext, filters, pagination, user)
+
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
 		return
