@@ -90,9 +90,7 @@ func (c *addressControllerImpl) Search(ginContext *gin.Context) {
 		return
 	}
 
-	// filters.UserID = utils.Ptr(user.UserID)
-	id := user.UserID
-	filters.UserID = &id
+	filters.UserID = utils.Ptr(user.UserID)
 
 	result, err := c.addressService.Search(requestContext, filters, pagination, user)
 
