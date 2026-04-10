@@ -23,5 +23,6 @@ func AddressRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	addressRouter.POST("/", AddressController.Create)
 	addressRouter.GET("/", AddressController.Search)
 	addressRouter.GET("/:id", AddressController.Get)
+	addressRouter.PUT("/:id", AddressController.Update)
 
 }

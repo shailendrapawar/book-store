@@ -35,13 +35,13 @@ type SearchAddressFilters struct {
 }
 
 type UpdateAddressRequest struct {
-	AddressType *string `json:"address_type" binding:"required,omitnull"`
-	Line1       *string `json:"line1" binding:"required,omitnull"`
-	Line2       *string `json:"line2" binding:"omitnull"`
-	Landmark    *string `json:"landmark" binding:"omitnull"`
-	City        *string `json:"city" binding:"required,omitnull"`
-	Pincode     *string `json:"pincode" binding:"required,omitnull"`
-	District    *string `json:"district" binding:"required,omitnull"`
-	State       *string `json:"state" binding:"required,omitnull"`
-	Country     *string `json:"country" binding:"required,omitnull"`
+	AddressType *string `json:"address_type" binding:"omitempty,oneof=home work other"`
+	Line1       *string `json:"line1" binding:"omitempty"`
+	Line2       *string `json:"line2" binding:"omitempty"`
+	Landmark    *string `json:"landmark" binding:"omitempty"`
+	City        *string `json:"city" binding:"omitempty"`
+	Pincode     *string `json:"pincode" binding:"omitempty"`
+	District    *string `json:"district" binding:"omitempty"`
+	State       *string `json:"state" binding:"omitempty"`
+	Country     *string `json:"country" binding:"omitempty"`
 }

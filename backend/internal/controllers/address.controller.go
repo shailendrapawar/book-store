@@ -14,6 +14,7 @@ type AddressController interface {
 	Create(ginContext *gin.Context)
 	Search(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
+	Update(ginContext *gin.Context)
 }
 
 type addressControllerImpl struct {
@@ -141,4 +142,43 @@ func (c *addressControllerImpl) Get(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Address Found", address)
+}
+
+// Update godoc
+// @Summary      Update address
+// @Description  Update an existing address by UUID
+// @Tags         Address
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                       true  "Address UUID" format(uuid)
+// @Param        request body    adapters.UpdateAddressRequest true  "Update Address Request"
+// @Success      200   {object}  utils.SuccessResponse{data=adapters.Address}
+// @Failure      400   {object}  utils.ErrorResponse
+// @Failure      404   {object}  utils.ErrorResponse
+// @Failure      401   {object}  utils.ErrorResponse
+// @Router       /api/v1/addresses/{id} [put]
+func (c *addressControllerImpl) Update(ginContext *gin.Context) {
+
+	reqContext := ginContext.Request.Context()
+	id := ginContext.Param("id")
+
+	if id == "" || !utils.IsUUID(id) {
+		utils.HandleErrorResponse(ginContext, 400, "Invalid id", nil)
+		return
+	}
+
+	var req adapters.UpdateAddressRequest
+
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	address, err := c.addressService.Update(reqContext, id, &req)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Address Updated", address)
 }

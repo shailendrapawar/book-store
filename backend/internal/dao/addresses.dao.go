@@ -23,6 +23,7 @@ type AddressDao interface {
 	Create(ctx context.Context, address *adapters.CreateAddressRequest) (interface{}, error)
 	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error)
 	Get(ctx context.Context, id string) (*models.Address, error)
+	Update(ctx context.Context, id string, payload *adapters.UpdateAddressRequest) (interface{}, error)
 }
 
 type addressDaoImpl struct {
@@ -138,16 +139,16 @@ func (d *addressDaoImpl) Update(ctx context.Context, id string, payload *adapter
 
 	setter := d.setModel(payload, address)
 
-	_, err = models.Addresses.Update(
+	newAddress, err := models.Addresses.Update(
 		models.UpdateWhere.Addresses.ID.EQ(id),
 		setter.UpdateMod(),
-	).Exec(ctx, d.db)
+	).One(ctx, d.db)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return address, nil
+	return newAddress, nil
 }
 
 func (d *addressDaoImpl) setModel(model *adapters.UpdateAddressRequest, entity *models.Address) *models.AddressSetter {
