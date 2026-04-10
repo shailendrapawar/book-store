@@ -34,6 +34,10 @@ type SearchAddressFilters struct {
 	IsDeleted *bool   `json:"is_deleted"`
 }
 
+type SearchAddressResponse struct {
+	// pagination Pagination
+	Addresses []Address `json:"addresses"`
+}
 type UpdateAddressRequest struct {
 	AddressType *string `json:"address_type" binding:"omitempty,oneof=home work other"`
 	Line1       *string `json:"line1" binding:"omitempty"`

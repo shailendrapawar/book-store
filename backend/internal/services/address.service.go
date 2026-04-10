@@ -6,10 +6,11 @@ import (
 
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
 type AddressService interface {
-	Create(ctx context.Context, req *adapters.CreateAddressRequest) (interface{}, error)
+	Create(ctx context.Context, req *adapters.CreateAddressRequest) (*adapters.Address, error)
 	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error)
 	Get(ctx context.Context, id string) (interface{}, error)
 	Update(ctx context.Context, id string, req *adapters.UpdateAddressRequest) (interface{}, error)
@@ -25,13 +26,26 @@ func NewAddressService(db *sql.DB) AddressService {
 	}
 }
 
-func (s *addressServiceImpl) Create(ctx context.Context, req *adapters.CreateAddressRequest) (interface{}, error) {
+func (s *addressServiceImpl) Create(ctx context.Context, req *adapters.CreateAddressRequest) (*adapters.Address, error) {
 
 	res, err := s.addressDAO.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+
+	return &adapters.Address{
+		Id:          res.ID,
+		UserID:      res.UserID,
+		AddressType: res.AddressesType,
+		Line1:       res.Line1,
+		Line2:       utils.ExtractNullString(res.Line2),
+		Landmark:    utils.ExtractNullString(res.Landmark),
+		City:        res.City,
+		Pincode:     res.Pincode,
+		District:    res.District,
+		State:       res.State,
+		Country:     res.Country,
+	}, nil
 }
 
 func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error) {
@@ -40,6 +54,7 @@ func (s *addressServiceImpl) Search(ctx context.Context, filters adapters.Search
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 
 }

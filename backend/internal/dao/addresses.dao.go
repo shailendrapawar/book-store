@@ -20,10 +20,10 @@ import (
 )
 
 type AddressDao interface {
-	Create(ctx context.Context, address *adapters.CreateAddressRequest) (interface{}, error)
+	Create(ctx context.Context, address *adapters.CreateAddressRequest) (*models.Address, error)
 	Search(ctx context.Context, filters adapters.SearchAddressFilters, pagination adapters.PaginationRequest) (interface{}, error)
 	Get(ctx context.Context, id string) (*models.Address, error)
-	Update(ctx context.Context, id string, payload *adapters.UpdateAddressRequest) (interface{}, error)
+	Update(ctx context.Context, id string, payload *adapters.UpdateAddressRequest) (*models.Address, error)
 }
 
 type addressDaoImpl struct {
@@ -36,7 +36,7 @@ func NewAddressDao(db *sql.DB) AddressDao {
 	}
 }
 
-func (d *addressDaoImpl) Create(ctx context.Context, address *adapters.CreateAddressRequest) (interface{}, error) {
+func (d *addressDaoImpl) Create(ctx context.Context, address *adapters.CreateAddressRequest) (*models.Address, error) {
 
 	user := middlewares.GetUserFromCTX(ctx)
 	addressUUID := utils.CreateUUID()
@@ -128,7 +128,7 @@ func (d *addressDaoImpl) Get(ctx context.Context, id string) (*models.Address, e
 	return address, nil
 }
 
-func (d *addressDaoImpl) Update(ctx context.Context, id string, payload *adapters.UpdateAddressRequest) (interface{}, error) {
+func (d *addressDaoImpl) Update(ctx context.Context, id string, payload *adapters.UpdateAddressRequest) (*models.Address, error) {
 
 	//get address by id
 	address, err := d.Get(ctx, id)
