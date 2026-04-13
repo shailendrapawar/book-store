@@ -22,8 +22,14 @@ func CartRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	CartController := controllers.NewCartController(db, cfg)
 
 	// insert actual routes
-	cartRouter.POST("/", CartController.Create)
-	cartRouter.GET("/", CartController.Search)
-	cartRouter.GET("/:id", CartController.Get)
-	cartRouter.GET("/me", CartController.GetByUserID)
+	// cartRouter.POST("/", CartController.Create)
+
+	cartRouter.GET("/", CartController.Search) //for admin
+	cartRouter.GET("/:id", CartController.Get) //for admin
+
+	cartRouter.GET("/me", CartController.GetByUserID) //for user
+
+	// cart items crud
+	cartRouter.POST("/items", CartController.AddItemToCart)
+
 }

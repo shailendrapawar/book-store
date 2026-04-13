@@ -11,7 +11,6 @@ import (
 	"github.com/aarondl/opt/omit"
 	"github.com/jaswdr/faker/v2"
 	models "github.com/shailendrapawar/book-store/internal/db/models"
-	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 )
 
@@ -40,7 +39,6 @@ type CartItemTemplate struct {
 	CartID    func() string
 	BookID    func() string
 	Quantity  func() int32
-	Price     func() decimal.Decimal
 	CreatedAt func() time.Time
 	UpdatedAt func() time.Time
 
@@ -108,10 +106,6 @@ func (o CartItemTemplate) BuildSetter() *models.CartItemSetter {
 		val := o.Quantity()
 		m.Quantity = omit.From(val)
 	}
-	if o.Price != nil {
-		val := o.Price()
-		m.Price = omit.From(val)
-	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
 		m.CreatedAt = omit.From(val)
@@ -154,9 +148,6 @@ func (o CartItemTemplate) Build() *models.CartItem {
 	if o.Quantity != nil {
 		m.Quantity = o.Quantity()
 	}
-	if o.Price != nil {
-		m.Price = o.Price()
-	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
 	}
@@ -194,10 +185,6 @@ func ensureCreatableCartItem(m *models.CartItemSetter) {
 	if !(m.BookID.IsValue()) {
 		val := random_string(nil, "50")
 		m.BookID = omit.From(val)
-	}
-	if !(m.Price.IsValue()) {
-		val := random_decimal_Decimal(nil, "10", "2")
-		m.Price = omit.From(val)
 	}
 }
 
@@ -340,7 +327,6 @@ func (m cartItemMods) RandomizeAllColumns(f *faker.Faker) CartItemMod {
 		CartItemMods.RandomCartID(f),
 		CartItemMods.RandomBookID(f),
 		CartItemMods.RandomQuantity(f),
-		CartItemMods.RandomPrice(f),
 		CartItemMods.RandomCreatedAt(f),
 		CartItemMods.RandomUpdatedAt(f),
 	}
@@ -466,37 +452,6 @@ func (m cartItemMods) RandomQuantity(f *faker.Faker) CartItemMod {
 	return CartItemModFunc(func(_ context.Context, o *CartItemTemplate) {
 		o.Quantity = func() int32 {
 			return random_int32(f)
-		}
-	})
-}
-
-// Set the model columns to this value
-func (m cartItemMods) Price(val decimal.Decimal) CartItemMod {
-	return CartItemModFunc(func(_ context.Context, o *CartItemTemplate) {
-		o.Price = func() decimal.Decimal { return val }
-	})
-}
-
-// Set the Column from the function
-func (m cartItemMods) PriceFunc(f func() decimal.Decimal) CartItemMod {
-	return CartItemModFunc(func(_ context.Context, o *CartItemTemplate) {
-		o.Price = f
-	})
-}
-
-// Clear any values for the column
-func (m cartItemMods) UnsetPrice() CartItemMod {
-	return CartItemModFunc(func(_ context.Context, o *CartItemTemplate) {
-		o.Price = nil
-	})
-}
-
-// Generates a random value for the column using the given faker
-// if faker is nil, a default faker is used
-func (m cartItemMods) RandomPrice(f *faker.Faker) CartItemMod {
-	return CartItemModFunc(func(_ context.Context, o *CartItemTemplate) {
-		o.Price = func() decimal.Decimal {
-			return random_decimal_Decimal(f, "10", "2")
 		}
 	})
 }

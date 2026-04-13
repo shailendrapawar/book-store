@@ -131,7 +131,6 @@ func (f *Factory) FromExistingCartItem(m *models.CartItem) *CartItemTemplate {
 	o.CartID = func() string { return m.CartID }
 	o.BookID = func() string { return m.BookID }
 	o.Quantity = func() int32 { return m.Quantity }
-	o.Price = func() decimal.Decimal { return m.Price }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
@@ -167,7 +166,6 @@ func (f *Factory) FromExistingCart(m *models.Cart) *CartTemplate {
 
 	o.ID = func() string { return m.ID }
 	o.UserID = func() string { return m.UserID }
-	o.Status = func() string { return m.Status }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 

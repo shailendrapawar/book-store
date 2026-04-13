@@ -26,7 +26,6 @@ import (
 type Cart struct {
 	ID        string    `db:"id,pk" `
 	UserID    string    `db:"user_id" `
-	Status    string    `db:"status" `
 	CreatedAt time.Time `db:"created_at" `
 	UpdatedAt time.Time `db:"updated_at" `
 
@@ -52,12 +51,11 @@ type cartR struct {
 func buildCartColumns(alias string) cartColumns {
 	return cartColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "status", "created_at", "updated_at",
+			"id", "user_id", "created_at", "updated_at",
 		).WithParent("carts"),
 		tableAlias: alias,
 		ID:         psql.Quote(alias, "id"),
 		UserID:     psql.Quote(alias, "user_id"),
-		Status:     psql.Quote(alias, "status"),
 		CreatedAt:  psql.Quote(alias, "created_at"),
 		UpdatedAt:  psql.Quote(alias, "updated_at"),
 	}
@@ -68,7 +66,6 @@ type cartColumns struct {
 	tableAlias string
 	ID         psql.Expression
 	UserID     psql.Expression
-	Status     psql.Expression
 	CreatedAt  psql.Expression
 	UpdatedAt  psql.Expression
 }
@@ -87,21 +84,17 @@ func (cartColumns) AliasedAs(alias string) cartColumns {
 type CartSetter struct {
 	ID        omit.Val[string]    `db:"id,pk" `
 	UserID    omit.Val[string]    `db:"user_id" `
-	Status    omit.Val[string]    `db:"status" `
 	CreatedAt omit.Val[time.Time] `db:"created_at" `
 	UpdatedAt omit.Val[time.Time] `db:"updated_at" `
 }
 
 func (s CartSetter) SetColumns() []string {
-	vals := make([]string, 0, 5)
+	vals := make([]string, 0, 4)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
 	if s.UserID.IsValue() {
 		vals = append(vals, "user_id")
-	}
-	if s.Status.IsValue() {
-		vals = append(vals, "status")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -119,9 +112,6 @@ func (s CartSetter) Overwrite(t *Cart) {
 	if s.UserID.IsValue() {
 		t.UserID = s.UserID.MustGet()
 	}
-	if s.Status.IsValue() {
-		t.Status = s.Status.MustGet()
-	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
@@ -136,7 +126,7 @@ func (s *CartSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 5)
+		vals := make([]bob.Expression, 4)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -149,22 +139,16 @@ func (s *CartSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if s.Status.IsValue() {
-			vals[2] = psql.Arg(s.Status.MustGet())
+		if s.CreatedAt.IsValue() {
+			vals[2] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[3] = psql.Arg(s.CreatedAt.MustGet())
+		if s.UpdatedAt.IsValue() {
+			vals[3] = psql.Arg(s.UpdatedAt.MustGet())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
-		}
-
-		if s.UpdatedAt.IsValue() {
-			vals[4] = psql.Arg(s.UpdatedAt.MustGet())
-		} else {
-			vals[4] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -176,7 +160,7 @@ func (s CartSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s CartSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 5)
+	exprs := make([]bob.Expression, 0, 4)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -189,13 +173,6 @@ func (s CartSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "user_id")...),
 			psql.Arg(s.UserID),
-		}})
-	}
-
-	if s.Status.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "status")...),
-			psql.Arg(s.Status),
 		}})
 	}
 
@@ -606,7 +583,6 @@ func (cart0 *Cart) AttachUser(ctx context.Context, exec bob.Executor, user1 *Use
 type cartWhere[Q psql.Filterable] struct {
 	ID        psql.WhereMod[Q, string]
 	UserID    psql.WhereMod[Q, string]
-	Status    psql.WhereMod[Q, string]
 	CreatedAt psql.WhereMod[Q, time.Time]
 	UpdatedAt psql.WhereMod[Q, time.Time]
 }
@@ -619,7 +595,6 @@ func buildCartWhere[Q psql.Filterable](cols cartColumns) cartWhere[Q] {
 	return cartWhere[Q]{
 		ID:        psql.Where[Q, string](cols.ID),
 		UserID:    psql.Where[Q, string](cols.UserID),
-		Status:    psql.Where[Q, string](cols.Status),
 		CreatedAt: psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt: psql.Where[Q, time.Time](cols.UpdatedAt),
 	}

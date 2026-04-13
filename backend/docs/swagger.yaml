@@ -1,5 +1,17 @@
 basePath: /
 definitions:
+  adapters.AddItemToCartRequest:
+    properties:
+      product_id:
+        minLength: 1
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
   adapters.Address:
     properties:
       address_type:
@@ -61,12 +73,28 @@ definitions:
         type: string
       id:
         type: string
-      status:
-        type: string
       updated_at:
         type: string
       user_id:
         type: string
+    type: object
+  adapters.CartItem:
+    properties:
+      cart_id:
+        minLength: 1
+        type: string
+      id:
+        type: string
+      product_id:
+        minLength: 1
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - cart_id
+    - product_id
+    - quantity
     type: object
   adapters.CreateAddressRequest:
     properties:
@@ -655,35 +683,7 @@ paths:
                 data:
                   type: object
               type: object
-      summary: Search carts
-      tags:
-      - Cart
-    post:
-      consumes:
-      - application/json
-      description: Creates a cart for the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/adapters.Cart'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.ErrorResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      summary: Create cart
+      summary: Search carts  (ADMIN)
       tags:
       - Cart
   /api/v1/carts/{id}:
@@ -714,6 +714,46 @@ paths:
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: Get a cart by ID (ADMIN ONLY)
+      tags:
+      - Cart
+  /api/v1/carts/items:
+    post:
+      consumes:
+      - application/json
+      description: Adds a book to user's cart. If item exists, quantity is updated.
+      parameters:
+      - description: Add Item Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/adapters.AddItemToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adapters.CartItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add item to cart
       tags:
       - Cart
   /api/v1/carts/me:

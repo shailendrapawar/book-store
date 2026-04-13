@@ -10,8 +10,17 @@ var CartItemErrors = &cartItemErrors{
 		columns: []string{"id"},
 		s:       "cart_items_pkey",
 	},
+
+	ErrUniqueCartItemsCartIdBookIdKey: &UniqueConstraintError{
+		schema:  "",
+		table:   "cart_items",
+		columns: []string{"cart_id", "book_id"},
+		s:       "cart_items_cart_id_book_id_key",
+	},
 }
 
 type cartItemErrors struct {
 	ErrUniqueCartItemsPkey *UniqueConstraintError
+
+	ErrUniqueCartItemsCartIdBookIdKey *UniqueConstraintError
 }

@@ -33,15 +33,6 @@ var Carts = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		Status: column{
-			Name:      "status",
-			DBType:    "character varying",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp without time zone",
@@ -103,14 +94,13 @@ var Carts = Table[
 type cartColumns struct {
 	ID        column
 	UserID    column
-	Status    column
 	CreatedAt column
 	UpdatedAt column
 }
 
 func (c cartColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.Status, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.UserID, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

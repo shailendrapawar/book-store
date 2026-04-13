@@ -12,10 +12,12 @@ import (
 )
 
 type CartController interface {
-	Create(ginContext *gin.Context)
+	// Create(ginContext *gin.Context)
 	Search(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
 	GetByUserID(ginContext *gin.Context)
+
+	AddItemToCart(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -28,28 +30,6 @@ func NewCartController(db *sql.DB, cfg *config.Config) CartController {
 		cartService: services.NewCartService(db),
 		cfg:         cfg,
 	}
-}
-
-// Create godoc
-// @Summary      Create cart
-// @Description  Creates a cart for the authenticated user
-// @Tags         Cart
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} utils.SuccessResponse{data=adapters.Cart}
-// @Failure      400 {object} utils.ErrorResponse{data=nil}
-// @Router       /api/v1/carts [post]
-func (c *cartControllerImpl) Create(ginContext *gin.Context) {
-
-	requestContext := ginContext.Request.Context()
-
-	res, err := c.cartService.Create(requestContext)
-	if err != nil {
-		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
-		return
-	}
-
-	utils.HandleSuccessResponse(ginContext, 200, "Cart created", res)
 }
 
 // Search godoc
@@ -138,4 +118,39 @@ func (c *cartControllerImpl) GetByUserID(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Cart Found", res)
+}
+
+// AddItemToCart godoc
+// @Summary Add item to cart
+// @Description Adds a book to user's cart. If item exists, quantity is updated.
+// @Tags Cart
+// @Accept json
+// @Produce json
+// @Param request body adapters.AddItemToCartRequest true "Add Item Payload"
+// @Success 200 {object} adapters.CartItem
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/carts/items [post]
+func (c *cartControllerImpl) AddItemToCart(ginContext *gin.Context) {
+
+	requestContext := ginContext.Request.Context()
+
+	var req adapters.AddItemToCartRequest
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	//call service
+	user := middlewares.GetUserFromCTX(requestContext)
+	res, err := c.cartService.AddItemToCart(requestContext, req, *user)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Item added to cart", res)
+
 }

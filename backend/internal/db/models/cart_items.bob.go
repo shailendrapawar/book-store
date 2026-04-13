@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aarondl/opt/omit"
-	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -25,13 +24,12 @@ import (
 
 // CartItem is an object representing the database table.
 type CartItem struct {
-	ID        string          `db:"id,pk" `
-	CartID    string          `db:"cart_id" `
-	BookID    string          `db:"book_id" `
-	Quantity  int32           `db:"quantity" `
-	Price     decimal.Decimal `db:"price" `
-	CreatedAt time.Time       `db:"created_at" `
-	UpdatedAt time.Time       `db:"updated_at" `
+	ID        string    `db:"id,pk" `
+	CartID    string    `db:"cart_id" `
+	BookID    string    `db:"book_id" `
+	Quantity  int32     `db:"quantity" `
+	CreatedAt time.Time `db:"created_at" `
+	UpdatedAt time.Time `db:"updated_at" `
 
 	R cartItemR `db:"-" `
 }
@@ -55,14 +53,13 @@ type cartItemR struct {
 func buildCartItemColumns(alias string) cartItemColumns {
 	return cartItemColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "cart_id", "book_id", "quantity", "price", "created_at", "updated_at",
+			"id", "cart_id", "book_id", "quantity", "created_at", "updated_at",
 		).WithParent("cart_items"),
 		tableAlias: alias,
 		ID:         psql.Quote(alias, "id"),
 		CartID:     psql.Quote(alias, "cart_id"),
 		BookID:     psql.Quote(alias, "book_id"),
 		Quantity:   psql.Quote(alias, "quantity"),
-		Price:      psql.Quote(alias, "price"),
 		CreatedAt:  psql.Quote(alias, "created_at"),
 		UpdatedAt:  psql.Quote(alias, "updated_at"),
 	}
@@ -75,7 +72,6 @@ type cartItemColumns struct {
 	CartID     psql.Expression
 	BookID     psql.Expression
 	Quantity   psql.Expression
-	Price      psql.Expression
 	CreatedAt  psql.Expression
 	UpdatedAt  psql.Expression
 }
@@ -92,17 +88,16 @@ func (cartItemColumns) AliasedAs(alias string) cartItemColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type CartItemSetter struct {
-	ID        omit.Val[string]          `db:"id,pk" `
-	CartID    omit.Val[string]          `db:"cart_id" `
-	BookID    omit.Val[string]          `db:"book_id" `
-	Quantity  omit.Val[int32]           `db:"quantity" `
-	Price     omit.Val[decimal.Decimal] `db:"price" `
-	CreatedAt omit.Val[time.Time]       `db:"created_at" `
-	UpdatedAt omit.Val[time.Time]       `db:"updated_at" `
+	ID        omit.Val[string]    `db:"id,pk" `
+	CartID    omit.Val[string]    `db:"cart_id" `
+	BookID    omit.Val[string]    `db:"book_id" `
+	Quantity  omit.Val[int32]     `db:"quantity" `
+	CreatedAt omit.Val[time.Time] `db:"created_at" `
+	UpdatedAt omit.Val[time.Time] `db:"updated_at" `
 }
 
 func (s CartItemSetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 6)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -114,9 +109,6 @@ func (s CartItemSetter) SetColumns() []string {
 	}
 	if s.Quantity.IsValue() {
 		vals = append(vals, "quantity")
-	}
-	if s.Price.IsValue() {
-		vals = append(vals, "price")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -140,9 +132,6 @@ func (s CartItemSetter) Overwrite(t *CartItem) {
 	if s.Quantity.IsValue() {
 		t.Quantity = s.Quantity.MustGet()
 	}
-	if s.Price.IsValue() {
-		t.Price = s.Price.MustGet()
-	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
@@ -157,7 +146,7 @@ func (s *CartItemSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 7)
+		vals := make([]bob.Expression, 6)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -182,22 +171,16 @@ func (s *CartItemSetter) Apply(q *dialect.InsertQuery) {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.Price.IsValue() {
-			vals[4] = psql.Arg(s.Price.MustGet())
+		if s.CreatedAt.IsValue() {
+			vals[4] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[5] = psql.Arg(s.CreatedAt.MustGet())
+		if s.UpdatedAt.IsValue() {
+			vals[5] = psql.Arg(s.UpdatedAt.MustGet())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
-		}
-
-		if s.UpdatedAt.IsValue() {
-			vals[6] = psql.Arg(s.UpdatedAt.MustGet())
-		} else {
-			vals[6] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -209,7 +192,7 @@ func (s CartItemSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s CartItemSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 6)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -236,13 +219,6 @@ func (s CartItemSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "quantity")...),
 			psql.Arg(s.Quantity),
-		}})
-	}
-
-	if s.Price.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "price")...),
-			psql.Arg(s.Price),
 		}})
 	}
 
@@ -635,7 +611,6 @@ type cartItemWhere[Q psql.Filterable] struct {
 	CartID    psql.WhereMod[Q, string]
 	BookID    psql.WhereMod[Q, string]
 	Quantity  psql.WhereMod[Q, int32]
-	Price     psql.WhereMod[Q, decimal.Decimal]
 	CreatedAt psql.WhereMod[Q, time.Time]
 	UpdatedAt psql.WhereMod[Q, time.Time]
 }
@@ -650,7 +625,6 @@ func buildCartItemWhere[Q psql.Filterable](cols cartItemColumns) cartItemWhere[Q
 		CartID:    psql.Where[Q, string](cols.CartID),
 		BookID:    psql.Where[Q, string](cols.BookID),
 		Quantity:  psql.Where[Q, int32](cols.Quantity),
-		Price:     psql.Where[Q, decimal.Decimal](cols.Price),
 		CreatedAt: psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt: psql.Where[Q, time.Time](cols.UpdatedAt),
 	}

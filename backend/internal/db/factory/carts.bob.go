@@ -37,7 +37,6 @@ func (mods CartModSlice) Apply(ctx context.Context, n *CartTemplate) {
 type CartTemplate struct {
 	ID        func() string
 	UserID    func() string
-	Status    func() string
 	CreatedAt func() time.Time
 	UpdatedAt func() time.Time
 
@@ -104,10 +103,6 @@ func (o CartTemplate) BuildSetter() *models.CartSetter {
 		val := o.UserID()
 		m.UserID = omit.From(val)
 	}
-	if o.Status != nil {
-		val := o.Status()
-		m.Status = omit.From(val)
-	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
 		m.CreatedAt = omit.From(val)
@@ -144,9 +139,6 @@ func (o CartTemplate) Build() *models.Cart {
 	if o.UserID != nil {
 		m.UserID = o.UserID()
 	}
-	if o.Status != nil {
-		m.Status = o.Status()
-	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
 	}
@@ -180,10 +172,6 @@ func ensureCreatableCart(m *models.CartSetter) {
 	if !(m.UserID.IsValue()) {
 		val := random_string(nil, "50")
 		m.UserID = omit.From(val)
-	}
-	if !(m.Status.IsValue()) {
-		val := random_string(nil, "20")
-		m.Status = omit.From(val)
 	}
 }
 
@@ -326,7 +314,6 @@ func (m cartMods) RandomizeAllColumns(f *faker.Faker) CartMod {
 	return CartModSlice{
 		CartMods.RandomID(f),
 		CartMods.RandomUserID(f),
-		CartMods.RandomStatus(f),
 		CartMods.RandomCreatedAt(f),
 		CartMods.RandomUpdatedAt(f),
 	}
@@ -390,37 +377,6 @@ func (m cartMods) RandomUserID(f *faker.Faker) CartMod {
 	return CartModFunc(func(_ context.Context, o *CartTemplate) {
 		o.UserID = func() string {
 			return random_string(f, "50")
-		}
-	})
-}
-
-// Set the model columns to this value
-func (m cartMods) Status(val string) CartMod {
-	return CartModFunc(func(_ context.Context, o *CartTemplate) {
-		o.Status = func() string { return val }
-	})
-}
-
-// Set the Column from the function
-func (m cartMods) StatusFunc(f func() string) CartMod {
-	return CartModFunc(func(_ context.Context, o *CartTemplate) {
-		o.Status = f
-	})
-}
-
-// Clear any values for the column
-func (m cartMods) UnsetStatus() CartMod {
-	return CartModFunc(func(_ context.Context, o *CartTemplate) {
-		o.Status = nil
-	})
-}
-
-// Generates a random value for the column using the given faker
-// if faker is nil, a default faker is used
-func (m cartMods) RandomStatus(f *faker.Faker) CartMod {
-	return CartModFunc(func(_ context.Context, o *CartTemplate) {
-		o.Status = func() string {
-			return random_string(f, "20")
 		}
 	})
 }

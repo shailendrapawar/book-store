@@ -51,15 +51,6 @@ var CartItems = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		Price: column{
-			Name:      "price",
-			DBType:    "numeric",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp without time zone",
@@ -97,6 +88,28 @@ var CartItems = Table[
 			Where:         "",
 			Include:       []string{},
 		},
+		CartItemsCartIDBookIDKey: index{
+			Type: "btree",
+			Name: "cart_items_cart_id_book_id_key",
+			Columns: []indexColumn{
+				{
+					Name:         "cart_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "book_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:        true,
+			Comment:       "",
+			NullsFirst:    []bool{false, false},
+			NullsDistinct: false,
+			Where:         "",
+			Include:       []string{},
+		},
 	},
 	PrimaryKey: &constraint{
 		Name:    "cart_items_pkey",
@@ -123,23 +136,21 @@ var CartItems = Table[
 			ForeignColumns: []string{"id"},
 		},
 	},
-
-	Checks: cartItemChecks{
-		CartItemsPriceCheck: check{
-			constraint: constraint{
-				Name:    "cart_items_price_check",
-				Columns: []string{"price"},
-				Comment: "",
-			},
-			Expression: "(price > (0)::numeric)",
+	Uniques: cartItemUniques{
+		CartItemsCartIDBookIDKey: constraint{
+			Name:    "cart_items_cart_id_book_id_key",
+			Columns: []string{"cart_id", "book_id"},
+			Comment: "",
 		},
+	},
+	Checks: cartItemChecks{
 		CartItemsQuantityCheck: check{
 			constraint: constraint{
 				Name:    "cart_items_quantity_check",
 				Columns: []string{"quantity"},
 				Comment: "",
 			},
-			Expression: "(quantity >= 0)",
+			Expression: "(quantity > 0)",
 		},
 	},
 	Comment: "",
@@ -150,24 +161,24 @@ type cartItemColumns struct {
 	CartID    column
 	BookID    column
 	Quantity  column
-	Price     column
 	CreatedAt column
 	UpdatedAt column
 }
 
 func (c cartItemColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.CartID, c.BookID, c.Quantity, c.Price, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.CartID, c.BookID, c.Quantity, c.CreatedAt, c.UpdatedAt,
 	}
 }
 
 type cartItemIndexes struct {
-	CartItemsPkey index
+	CartItemsPkey            index
+	CartItemsCartIDBookIDKey index
 }
 
 func (i cartItemIndexes) AsSlice() []index {
 	return []index{
-		i.CartItemsPkey,
+		i.CartItemsPkey, i.CartItemsCartIDBookIDKey,
 	}
 }
 
@@ -182,19 +193,22 @@ func (f cartItemForeignKeys) AsSlice() []foreignKey {
 	}
 }
 
-type cartItemUniques struct{}
+type cartItemUniques struct {
+	CartItemsCartIDBookIDKey constraint
+}
 
 func (u cartItemUniques) AsSlice() []constraint {
-	return []constraint{}
+	return []constraint{
+		u.CartItemsCartIDBookIDKey,
+	}
 }
 
 type cartItemChecks struct {
-	CartItemsPriceCheck    check
 	CartItemsQuantityCheck check
 }
 
 func (c cartItemChecks) AsSlice() []check {
 	return []check{
-		c.CartItemsPriceCheck, c.CartItemsQuantityCheck,
+		c.CartItemsQuantityCheck,
 	}
 }

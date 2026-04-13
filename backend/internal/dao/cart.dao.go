@@ -36,13 +36,12 @@ func (d *CartDAOImpl) Create(ctx context.Context, userID string) (*adapters.Cart
 	newCart := models.CartSetter{
 		ID:     omit.From(id),
 		UserID: omit.From(userID),
-		Status: omit.From("active"),
 	}
 
 	cart, err := models.Carts.Insert(&newCart).One(ctx, d.db)
 
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return &adapters.Cart{
@@ -91,10 +90,6 @@ func (d *CartDAOImpl) Search(ctx context.Context, filters adapters.CartSearchFil
 	//append pagination
 	mods = append(mods, sm.Limit(pagination.Limit))
 	mods = append(mods, sm.Offset(pagination.Offset))
-
-	if filters.Status != "" {
-		mods = append(mods, models.SelectWhere.Carts.Status.EQ(filters.Status))
-	}
 
 	res, err := models.Carts.Query(
 		mods...,
