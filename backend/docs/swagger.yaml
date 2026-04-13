@@ -756,6 +756,36 @@ paths:
       summary: Add item to cart
       tags:
       - Cart
+  /api/v1/carts/items/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an item from the cart by its ID
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request or item not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Delete an item from the cart
+      tags:
+      - Cart
   /api/v1/carts/me:
     get:
       consumes:

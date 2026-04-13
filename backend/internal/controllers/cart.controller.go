@@ -18,6 +18,7 @@ type CartController interface {
 	GetByUserID(ginContext *gin.Context)
 
 	AddItemToCart(ginContext *gin.Context)
+	DeleteItemFromCart(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -153,4 +154,30 @@ func (c *cartControllerImpl) AddItemToCart(ginContext *gin.Context) {
 
 	utils.HandleSuccessResponse(ginContext, 200, "Item added to cart", res)
 
+}
+
+// DeleteItemFromCart godoc
+// @Summary      Delete an item from the cart
+// @Description  Delete an item from the cart by its ID
+// @Tags         Cart
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Item ID"
+// @Success      200  {object} utils.SuccessResponse{data=nil} "Item deleted successfully"
+// @Failure      400  {object} utils.ErrorResponse "Bad request or item not found"
+// @Router       /api/v1/carts/items/{id} [delete]
+func (c *cartControllerImpl) DeleteItemFromCart(ginContext *gin.Context) {
+
+	requestContext := ginContext.Request.Context()
+	id := ginContext.Param("id")
+	user := middlewares.GetUserFromCTX(requestContext)
+
+	res, err := c.cartService.DeleteItemFromCart(requestContext, id, *user)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Item deleted from cart", res)
 }

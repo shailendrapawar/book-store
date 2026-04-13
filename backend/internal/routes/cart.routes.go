@@ -31,5 +31,6 @@ func CartRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 
 	// cart items crud
 	cartRouter.POST("/items", CartController.AddItemToCart)
+	cartRouter.DELETE("/items/:id", CartController.DeleteItemFromCart)
 
 }

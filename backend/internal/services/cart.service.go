@@ -18,6 +18,7 @@ type CartService interface {
 	GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error)
 
 	AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (any, error)
+	DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (any, error)
 }
 
 type cartServiceImpl struct {
@@ -123,4 +124,31 @@ func (s *cartServiceImpl) AddItemToCart(ctx context.Context, payload adapters.Ad
 	}
 
 	return res, nil
+}
+
+func (s *cartServiceImpl) DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (interface{}, error) {
+
+	var cart adapters.Cart
+	// 1: get cart first
+	existingCart, err := s.GetByUserID(ctx, user.UserID)
+
+	if err == nil && existingCart == nil {
+		//create new cart (coz cart doesn't exists)
+		newCart, err := s.create(ctx)
+		if err != nil {
+			return nil, errors.New("Error while cart creation")
+		}
+		cart = *newCart //init new cart
+	} else {
+		cart = *existingCart //init existing cart
+	}
+
+	res, err := s.cartItemsDao.Delete(ctx, id, cart.ID)
+
+	if err != nil {
+		return nil, errors.New("failed to delete cart item")
+	}
+
+	return res, nil
+
 }
