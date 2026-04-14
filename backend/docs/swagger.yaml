@@ -252,6 +252,18 @@ definitions:
       title:
         type: string
     type: object
+  adapters.UpdateCartItemRequest:
+    properties:
+      book_id:
+        minLength: 1
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - book_id
+    - quantity
+    type: object
   adapters.User:
     properties:
       created_at:
@@ -755,7 +767,7 @@ paths:
             type: object
       summary: Add item to cart
       tags:
-      - Cart
+      - Cart-Items
   /api/v1/carts/items/{id}:
     delete:
       consumes:
@@ -785,7 +797,57 @@ paths:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: Delete an item from the cart
       tags:
-      - Cart
+      - Cart-Items
+    put:
+      consumes:
+      - application/json
+      description: Update the quantity of a specific item using cart item ID
+      parameters:
+      - description: Cart ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Cart Item Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/adapters.UpdateCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item updated successfully
+          schema:
+            $ref: '#/definitions/adapters.CartItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Cart Item Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update cart item quantity
+      tags:
+      - Cart-Items
   /api/v1/carts/me:
     get:
       consumes:

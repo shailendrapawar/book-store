@@ -13,12 +13,13 @@ import (
 
 type CartService interface {
 	create(ctx context.Context) (*adapters.Cart, error) //don't export this
-	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error)
+	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (any, error)
 	Get(ctx context.Context, id string) (any, error)
 	GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error)
 
 	AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (any, error)
 	DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (any, error)
+	UpdateCartItem(ctx context.Context, payload adapters.UpdateCartItemPayload, user adapters.Claims) (any, error)
 }
 
 type cartServiceImpl struct {
@@ -48,7 +49,7 @@ func (s *cartServiceImpl) create(ctx context.Context) (*adapters.Cart, error) {
 	return s.cartDao.Create(ctx, user.UserID)
 }
 
-func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (interface{}, error) {
+func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (any, error) {
 
 	res, err := s.cartDao.Search(ctx, filters, pagination)
 	if err != nil {
@@ -77,7 +78,7 @@ func (s *cartServiceImpl) GetByUserID(ctx context.Context, userID string) (*adap
 	return res, nil
 }
 
-func (s *cartServiceImpl) AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (interface{}, error) {
+func (s *cartServiceImpl) AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (any, error) {
 
 	var cart adapters.Cart
 	// 1: get cart first
@@ -126,7 +127,7 @@ func (s *cartServiceImpl) AddItemToCart(ctx context.Context, payload adapters.Ad
 	return res, nil
 }
 
-func (s *cartServiceImpl) DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (interface{}, error) {
+func (s *cartServiceImpl) DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (any, error) {
 
 	var cart adapters.Cart
 	// 1: get cart first
@@ -151,4 +152,23 @@ func (s *cartServiceImpl) DeleteItemFromCart(ctx context.Context, id string, use
 
 	return res, nil
 
+}
+
+func (s *cartServiceImpl) UpdateCartItem(ctx context.Context, payload adapters.UpdateCartItemPayload, user adapters.Claims) (any, error) {
+
+	// 1: get cart first
+	cart, err := s.cartDao.GetByID(ctx, payload.CartID)
+
+	if err != nil || cart.UserID != user.UserID {
+		// err uf cart not found or user id doesn't match
+		return nil, errors.New("Cart not found")
+	}
+
+	res, err := s.cartItemsDao.Update(ctx, payload)
+
+	if err != nil {
+		return nil, errors.New("failed to update cart item")
+	}
+
+	return res, nil
 }

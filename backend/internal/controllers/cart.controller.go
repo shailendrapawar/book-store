@@ -19,6 +19,7 @@ type CartController interface {
 
 	AddItemToCart(ginContext *gin.Context)
 	DeleteItemFromCart(ginContext *gin.Context)
+	UpdateCartItem(ginContext *gin.Context)
 }
 
 type cartControllerImpl struct {
@@ -124,7 +125,7 @@ func (c *cartControllerImpl) GetByUserID(ginContext *gin.Context) {
 // AddItemToCart godoc
 // @Summary Add item to cart
 // @Description Adds a book to user's cart. If item exists, quantity is updated.
-// @Tags Cart
+// @Tags Cart-Items
 // @Accept json
 // @Produce json
 // @Param request body adapters.AddItemToCartRequest true "Add Item Payload"
@@ -159,7 +160,7 @@ func (c *cartControllerImpl) AddItemToCart(ginContext *gin.Context) {
 // DeleteItemFromCart godoc
 // @Summary      Delete an item from the cart
 // @Description  Delete an item from the cart by its ID
-// @Tags         Cart
+// @Tags         Cart-Items
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "Item ID"
@@ -168,11 +169,11 @@ func (c *cartControllerImpl) AddItemToCart(ginContext *gin.Context) {
 // @Router       /api/v1/carts/items/{id} [delete]
 func (c *cartControllerImpl) DeleteItemFromCart(ginContext *gin.Context) {
 
-	requestContext := ginContext.Request.Context()
+	reqContext := ginContext.Request.Context()
 	id := ginContext.Param("id")
-	user := middlewares.GetUserFromCTX(requestContext)
+	user := middlewares.GetUserFromCTX(reqContext)
 
-	res, err := c.cartService.DeleteItemFromCart(requestContext, id, *user)
+	res, err := c.cartService.DeleteItemFromCart(reqContext, id, *user)
 
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
@@ -180,4 +181,48 @@ func (c *cartControllerImpl) DeleteItemFromCart(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Item deleted from cart", res)
+}
+
+// UpdateCartItem godoc
+// @Summary Update cart item quantity
+// @Description Update the quantity of a specific item using cart item ID
+// @Tags Cart-Items
+// @Accept json
+// @Produce json
+// @Param id path string true "Cart ID"
+// @Param payload body adapters.UpdateCartItemRequest true "Update Cart Item Payload"
+// @Success 200 {object} adapters.CartItem "Item updated successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "Cart Item Not Found"
+// @Failure 500 {object} map[string]string "Internal Server Error"
+// @Router /api/v1/carts/items/{id} [put]
+func (c *cartControllerImpl) UpdateCartItem(ginContext *gin.Context) {
+
+	reqContext := ginContext.Request.Context()
+
+	cartID := ginContext.Param("id")
+	user := middlewares.GetUserFromCTX(reqContext)
+
+	var req adapters.UpdateCartItemRequest
+	if err := ginContext.ShouldBindJSON(&req); err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	payload := &adapters.UpdateCartItemPayload{
+		CartID:   cartID,
+		BookID:   req.BookID,
+		Quantity: req.Quantity,
+	}
+
+	res, err := c.cartService.UpdateCartItem(reqContext, *payload, *user)
+
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Item updated", res)
+
 }
