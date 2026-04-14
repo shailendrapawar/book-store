@@ -158,8 +158,8 @@ func (c *cartControllerImpl) AddItemToCart(ginContext *gin.Context) {
 }
 
 // DeleteItemFromCart godoc
-// @Summary      Delete an item from the cart
-// @Description  Delete an item from the cart by its ID
+// @Summary      Delete item from the cart
+// @Description  Delete item from cart by its ID
 // @Tags         Cart-Items
 // @Accept       json
 // @Produce      json
