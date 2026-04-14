@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-MIGRATIONS_DIR="internal/db/migrations"
+MIGRATIONS_DIR="internal/env/migrations"
 mkdir -p $MIGRATIONS_DIR
 
 NEXT=$(ls $MIGRATIONS_DIR/*.sql 2>/dev/null | wc -l)
