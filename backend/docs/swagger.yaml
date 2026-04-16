@@ -149,6 +149,23 @@ definitions:
     - isbn
     - title
     type: object
+  adapters.CreateOrderRequest:
+    properties:
+      address_id:
+        type: string
+      coupon:
+        type: string
+      notes:
+        type: string
+      payment_method:
+        enum:
+        - cod
+        - online
+        type: string
+    required:
+    - address_id
+    - payment_method
+    type: object
   adapters.LoginRequest:
     properties:
       email:
@@ -170,6 +187,39 @@ definitions:
       role:
         type: string
       token:
+        type: string
+    type: object
+  adapters.Order:
+    properties:
+      created_at:
+        type: string
+      discount_type:
+        type: string
+      discount_value:
+        type: number
+      gross_amount:
+        type: number
+      id:
+        type: string
+      net_amount:
+        type: number
+      payment_method:
+        type: string
+      payment_status:
+        type: string
+      shipping_address:
+        type: string
+      shipping_city:
+        type: string
+      shipping_pincode:
+        type: string
+      shipping_state:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
         type: string
     type: object
   adapters.Pagination:
@@ -772,7 +822,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete an item from the cart by its ID
+      description: Delete item from cart by its ID
       parameters:
       - description: Item ID
         in: path
@@ -795,7 +845,7 @@ paths:
           description: Bad request or item not found
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-      summary: Delete an item from the cart
+      summary: Delete item from the cart
       tags:
       - Cart-Items
     put:
@@ -877,6 +927,46 @@ paths:
       summary: Get cart for logged-in user
       tags:
       - Cart
+  /api/v1/orders:
+    post:
+      consumes:
+      - application/json
+      description: Place a new order using items from the user's cart
+      parameters:
+      - description: Create Order Request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/adapters.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Order created successfully
+          schema:
+            $ref: '#/definitions/adapters.Order'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new order
+      tags:
+      - Orders
   /api/v1/users/{keyword}:
     get:
       consumes:

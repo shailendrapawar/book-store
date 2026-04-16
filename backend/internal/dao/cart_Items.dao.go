@@ -14,6 +14,7 @@ import (
 type CartItemsDAO interface {
 	Create(ctx context.Context, payload adapters.CreateCartItemPayload) (*adapters.CartItem, error)
 	Get(ctx context.Context, payload adapters.GetCartItemPayload) (*adapters.CartItem, error)
+	GetByCartID(ctx context.Context, cartID string) ([]adapters.CartItem, error)
 	Update(ctx context.Context, payload adapters.UpdateCartItemPayload) (*adapters.CartItem, error)
 	Delete(ctx context.Context, id, cartId string) (int, error)
 }
@@ -67,6 +68,28 @@ func (d *cartItemsDAOImpl) Get(ctx context.Context, payload adapters.GetCartItem
 		BookID:   cartItem.BookID,
 		Quantity: int(cartItem.Quantity),
 	}, nil
+}
+
+func (d *cartItemsDAOImpl) GetByCartID(ctx context.Context, cartID string) ([]adapters.CartItem, error) {
+
+	cartItems, err := models.CartItems.Query(
+		models.SelectWhere.CartItems.CartID.EQ(cartID),
+	).All(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var items []adapters.CartItem
+	for _, cartItem := range cartItems {
+		items = append(items, adapters.CartItem{
+			Id:       cartItem.ID,
+			CartID:   cartItem.CartID,
+			BookID:   cartItem.BookID,
+			Quantity: int(cartItem.Quantity),
+		})
+	}
+	return items, nil
 }
 
 func (d *cartItemsDAOImpl) Update(ctx context.Context, payload adapters.UpdateCartItemPayload) (*adapters.CartItem, error) {

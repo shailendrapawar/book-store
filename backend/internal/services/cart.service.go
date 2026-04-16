@@ -70,12 +70,23 @@ func (s *cartServiceImpl) Get(ctx context.Context, id string) (interface{}, erro
 
 func (s *cartServiceImpl) GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error) {
 
-	res, err := s.cartDao.GetByUserID(ctx, userID)
+	//get cart
+	cart, err := s.cartDao.GetByUserID(ctx, userID)
 
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+
+	//get cart items
+	cartItems, err := s.cartItemsDao.GetByCartID(ctx, cart.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cart.Items = cartItems
+
+	return cart, nil
 }
 
 func (s *cartServiceImpl) AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (any, error) {

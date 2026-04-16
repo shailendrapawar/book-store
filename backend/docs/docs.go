@@ -779,7 +779,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete an item from the cart by its ID",
+                "description": "Delete item from cart by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -789,7 +789,7 @@ const docTemplate = `{
                 "tags": [
                     "Cart-Items"
                 ],
-                "summary": "Delete an item from the cart",
+                "summary": "Delete item from the cart",
                 "parameters": [
                     {
                         "type": "string",
@@ -925,6 +925,67 @@ const docTemplate = `{
                         "description": "Bad request or cart not found",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders": {
+            "post": {
+                "description": "Place a new order using items from the user's cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Create a new order",
+                "parameters": [
+                    {
+                        "description": "Create Order Request",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/adapters.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Order created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/adapters.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -1183,6 +1244,31 @@ const docTemplate = `{
                 }
             }
         },
+        "adapters.CreateOrderRequest": {
+            "type": "object",
+            "required": [
+                "address_id",
+                "payment_method"
+            ],
+            "properties": {
+                "address_id": {
+                    "type": "string"
+                },
+                "coupon": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string",
+                    "enum": [
+                        "cod",
+                        "online"
+                    ]
+                }
+            }
+        },
         "adapters.LoginRequest": {
             "type": "object",
             "required": [
@@ -1214,6 +1300,56 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "adapters.Order": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "discount_type": {
+                    "type": "string"
+                },
+                "discount_value": {
+                    "type": "number"
+                },
+                "gross_amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "number"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "shipping_address": {
+                    "type": "string"
+                },
+                "shipping_city": {
+                    "type": "string"
+                },
+                "shipping_pincode": {
+                    "type": "string"
+                },
+                "shipping_state": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
