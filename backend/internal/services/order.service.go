@@ -18,8 +18,8 @@ type OrderService interface {
 }
 
 type orderServiceImpl struct {
-	// cartDao  dao.CartDAO
-	orderDao dao.Orders
+	cartItemsDao dao.CartItemsDAO
+	orderDao     dao.Orders
 
 	bookService       BookService
 	addressService    AddressService
@@ -29,8 +29,8 @@ type orderServiceImpl struct {
 
 func NewOrderService(db *sql.DB) OrderService {
 	return &orderServiceImpl{
-		// cartDao:  dao.NewCartDao(db),
-		orderDao: dao.NewOrdersDAO(db),
+		cartItemsDao: dao.NewCartItemsDAO(db),
+		orderDao:     dao.NewOrdersDAO(db),
 
 		bookService:       NewBookService(db),
 		addressService:    NewAddressService(db),
@@ -85,6 +85,11 @@ func (s *orderServiceImpl) Create(
 
 	// 4: TODO:clear cart of user
 	// isDeleted, err := s.cartService.DeleteItemFromCart(ctx,)
+	// isDeleted, err := s.cartItemsDao.Delete(ctx, userCart.ID)
+
+	// if err != nil || isDeleted == 0 {
+	// 	return nil, errors.New("Error while clearing cart")
+	// }
 
 	// merge both order details and items
 	return &adapters.Order{

@@ -113,3 +113,15 @@ func (d *CartDAOImpl) Search(ctx context.Context, filters adapters.CartSearchFil
 	}
 	return carts, nil
 }
+
+func (d *CartDAOImpl) Delete(ctx context.Context, cartID string) (*models.Cart, error) {
+
+	res, err := models.Carts.Delete(
+		models.DeleteWhere.Carts.ID.EQ(cartID),
+	).One(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

@@ -16,7 +16,8 @@ type CartItemsDAO interface {
 	Get(ctx context.Context, payload adapters.GetCartItemPayload) (*adapters.CartItem, error)
 	GetByCartID(ctx context.Context, cartID string) ([]adapters.CartItem, error)
 	Update(ctx context.Context, payload adapters.UpdateCartItemPayload) (*adapters.CartItem, error)
-	Delete(ctx context.Context, id, cartId string) (int, error)
+	DeleteItem(ctx context.Context, id, cartId string) (int, error)
+	Delete(ctx context.Context, id string) (int, error)
 }
 
 type cartItemsDAOImpl struct {
@@ -116,11 +117,23 @@ func (d *cartItemsDAOImpl) Update(ctx context.Context, payload adapters.UpdateCa
 	}, nil
 }
 
-func (d *cartItemsDAOImpl) Delete(ctx context.Context, id, cartId string) (int, error) {
+func (d *cartItemsDAOImpl) DeleteItem(ctx context.Context, id, cartId string) (int, error) {
 
 	_, err := models.CartItems.Delete(
 		models.DeleteWhere.CartItems.ID.EQ(id),
 		models.DeleteWhere.CartItems.CartID.EQ(cartId),
+	).One(ctx, d.db)
+
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
+func (d *cartItemsDAOImpl) Delete(ctx context.Context, id string) (int, error) {
+
+	_, err := models.CartItems.Delete(
+		models.DeleteWhere.CartItems.ID.EQ(id),
 	).One(ctx, d.db)
 
 	if err != nil {

@@ -144,18 +144,14 @@ func (s *cartServiceImpl) DeleteItemFromCart(ctx context.Context, id string, use
 	// 1: get cart first
 	existingCart, err := s.GetByUserID(ctx, user.UserID)
 
-	if err == nil && existingCart == nil {
-		//create new cart (coz cart doesn't exists)
-		newCart, err := s.create(ctx)
-		if err != nil {
-			return nil, errors.New("Error while cart creation")
-		}
-		cart = *newCart //init new cart
-	} else {
-		cart = *existingCart //init existing cart
+	if err == nil {
+		//cart not found
+		return nil, errors.New("Cart not found")
 	}
 
-	res, err := s.cartItemsDao.Delete(ctx, id, cart.ID)
+	cart = *existingCart
+
+	res, err := s.cartItemsDao.DeleteItem(ctx, id, cart.ID)
 
 	if err != nil {
 		return nil, errors.New("failed to delete cart item")
