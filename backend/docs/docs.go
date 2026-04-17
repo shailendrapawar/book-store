@@ -932,7 +932,12 @@ const docTemplate = `{
         },
         "/api/v1/orders": {
             "post": {
-                "description": "Place a new order using items from the user's cart",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates an order from the user's cart with optional coupon",
                 "consumes": [
                     "application/json"
                 ],
@@ -946,7 +951,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Create Order Request",
-                        "name": "payload",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -955,37 +960,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "Order created successfully",
                         "schema": {
-                            "$ref": "#/definitions/adapters.Order"
+                            "type": "object"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request / cart empty / business error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     }
                 }
@@ -1115,12 +1105,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "price": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "stock": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "title": {
                     "type": "string"
@@ -1135,6 +1123,12 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/adapters.CartItem"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -1254,18 +1248,14 @@ const docTemplate = `{
                 "address_id": {
                     "type": "string"
                 },
-                "coupon": {
+                "coupon_id": {
                     "type": "string"
                 },
                 "notes": {
                     "type": "string"
                 },
                 "payment_method": {
-                    "type": "string",
-                    "enum": [
-                        "cod",
-                        "online"
-                    ]
+                    "type": "string"
                 }
             }
         },
@@ -1300,56 +1290,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "adapters.Order": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "discount_type": {
-                    "type": "string"
-                },
-                "discount_value": {
-                    "type": "number"
-                },
-                "gross_amount": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "net_amount": {
-                    "type": "number"
-                },
-                "payment_method": {
-                    "type": "string"
-                },
-                "payment_status": {
-                    "type": "string"
-                },
-                "shipping_address": {
-                    "type": "string"
-                },
-                "shipping_city": {
-                    "type": "string"
-                },
-                "shipping_pincode": {
-                    "type": "string"
-                },
-                "shipping_state": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }

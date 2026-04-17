@@ -19,7 +19,7 @@ import (
 
 type BookDAO interface {
 	//methods
-	Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error)
+	Create(ctx context.Context, book *adapters.CreateBookRequest) (*models.Book, error)
 
 	GetById(ctx context.Context, id string) (*models.Book, error)
 	GetByISBN(ctx context.Context, id string) (*models.Book, error)
@@ -39,7 +39,7 @@ func NewBookDAO(db *sql.DB) BookDAO {
 	}
 }
 
-func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookRequest) (interface{}, error) {
+func (d *bookDAOImpl) Create(ctx context.Context, book *adapters.CreateBookRequest) (*models.Book, error) {
 
 	// generate uuid
 	bookUUID := utils.CreateUUID()

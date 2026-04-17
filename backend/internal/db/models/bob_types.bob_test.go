@@ -28,6 +28,9 @@ var _ bob.HookableType = &CartItem{}
 // Make sure the type Cart runs hooks after queries
 var _ bob.HookableType = &Cart{}
 
+// Make sure the type OrderItem runs hooks after queries
+var _ bob.HookableType = &OrderItem{}
+
 // Make sure the type Order runs hooks after queries
 var _ bob.HookableType = &Order{}
 

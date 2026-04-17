@@ -15,6 +15,7 @@ var (
 	// Relationship Contexts for books
 	bookWithParentsCascadingCtx = newContextual[bool]("bookWithParentsCascading")
 	bookRelCartItemsCtx         = newContextual[bool]("books.cart_items.cart_items.cart_items_book_id_fkey")
+	bookRelOrderItemsCtx        = newContextual[bool]("books.order_items.order_items.order_items_book_id_fkey")
 
 	// Relationship Contexts for cart_items
 	cartItemWithParentsCascadingCtx = newContextual[bool]("cartItemWithParentsCascading")
@@ -26,8 +27,14 @@ var (
 	cartRelCartItemsCtx         = newContextual[bool]("cart_items.carts.cart_items.cart_items_cart_id_fkey")
 	cartRelUserCtx              = newContextual[bool]("carts.users.carts.carts_user_id_fkey")
 
+	// Relationship Contexts for order_items
+	orderItemWithParentsCascadingCtx = newContextual[bool]("orderItemWithParentsCascading")
+	orderItemRelBookCtx              = newContextual[bool]("books.order_items.order_items.order_items_book_id_fkey")
+	orderItemRelOrderCtx             = newContextual[bool]("order_items.orders.order_items.order_items_order_id_fkey")
+
 	// Relationship Contexts for orders
 	orderWithParentsCascadingCtx = newContextual[bool]("orderWithParentsCascading")
+	orderRelOrderItemsCtx        = newContextual[bool]("order_items.orders.order_items.order_items_order_id_fkey")
 	orderRelUserCtx              = newContextual[bool]("orders.users.orders.orders_user_id_fkey")
 
 	// Relationship Contexts for users

@@ -24,10 +24,23 @@ type Order struct {
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+
+	Items []*OrderItem `json:"items"`
 }
 
+type CreateOrderRequest struct {
+	AddressId     string `json:"address_id" binding:"required"`
+	CouponId      string `json:"coupon_id" binding:"omitempty"`
+	Notes         string `json:"notes" binding:"omitempty"`
+	PaymentMethod string `json:"payment_method" binding:"required"`
+}
 type CreateOrderPayload struct {
-	UserId    string `json:"user_id" binding:"required omitempty"`
-	AddressId string `json:"address_id" binding:"required"`
-	CouponId  string `json:"coupon_id" binding:"omitempty"`
+	User          *Claims  `json:"user"`
+	Address       *Address `json:"address"`
+	Coupon        string   `json:"coupon"`
+	Books         []*Book  `json:"books"`
+	GrossAmount   float64  `json:"gross_amount"`
+	NetAmount     float64  `json:"net_amount"`
+	PaymentMethod string   `json:"payment_method"`
+	Currency      string   `json:"currency"`
 }

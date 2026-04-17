@@ -32,12 +32,13 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 }
 
 type joins[Q dialect.Joinable] struct {
-	Addresses joinSet[addressJoins[Q]]
-	Books     joinSet[bookJoins[Q]]
-	CartItems joinSet[cartItemJoins[Q]]
-	Carts     joinSet[cartJoins[Q]]
-	Orders    joinSet[orderJoins[Q]]
-	Users     joinSet[userJoins[Q]]
+	Addresses  joinSet[addressJoins[Q]]
+	Books      joinSet[bookJoins[Q]]
+	CartItems  joinSet[cartItemJoins[Q]]
+	Carts      joinSet[cartJoins[Q]]
+	OrderItems joinSet[orderItemJoins[Q]]
+	Orders     joinSet[orderJoins[Q]]
+	Users      joinSet[userJoins[Q]]
 }
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
@@ -50,12 +51,13 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
-		Addresses: buildJoinSet[addressJoins[Q]](Addresses.Columns, buildAddressJoins),
-		Books:     buildJoinSet[bookJoins[Q]](Books.Columns, buildBookJoins),
-		CartItems: buildJoinSet[cartItemJoins[Q]](CartItems.Columns, buildCartItemJoins),
-		Carts:     buildJoinSet[cartJoins[Q]](Carts.Columns, buildCartJoins),
-		Orders:    buildJoinSet[orderJoins[Q]](Orders.Columns, buildOrderJoins),
-		Users:     buildJoinSet[userJoins[Q]](Users.Columns, buildUserJoins),
+		Addresses:  buildJoinSet[addressJoins[Q]](Addresses.Columns, buildAddressJoins),
+		Books:      buildJoinSet[bookJoins[Q]](Books.Columns, buildBookJoins),
+		CartItems:  buildJoinSet[cartItemJoins[Q]](CartItems.Columns, buildCartItemJoins),
+		Carts:      buildJoinSet[cartJoins[Q]](Carts.Columns, buildCartJoins),
+		OrderItems: buildJoinSet[orderItemJoins[Q]](OrderItems.Columns, buildOrderItemJoins),
+		Orders:     buildJoinSet[orderJoins[Q]](Orders.Columns, buildOrderJoins),
+		Users:      buildJoinSet[userJoins[Q]](Users.Columns, buildUserJoins),
 	}
 }
 

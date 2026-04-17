@@ -51,6 +51,7 @@ type OrderTemplate struct {
 	ShippingPincode func() string
 	PaymentStatus   func() string
 	PaymentMethod   func() string
+	Currency        func() string
 	CreatedAt       func() time.Time
 	UpdatedAt       func() time.Time
 
@@ -61,9 +62,14 @@ type OrderTemplate struct {
 }
 
 type orderR struct {
-	User *orderRUserR
+	OrderItems []*orderROrderItemsR
+	User       *orderRUserR
 }
 
+type orderROrderItemsR struct {
+	number int
+	o      *OrderItemTemplate
+}
 type orderRUserR struct {
 	o *UserTemplate
 }
@@ -78,6 +84,19 @@ func (o *OrderTemplate) Apply(ctx context.Context, mods ...OrderMod) {
 // setModelRels creates and sets the relationships on *models.Order
 // according to the relationships in the template. Nothing is inserted into the db
 func (t OrderTemplate) setModelRels(o *models.Order) {
+	if t.r.OrderItems != nil {
+		rel := models.OrderItemSlice{}
+		for _, r := range t.r.OrderItems {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.OrderID = o.ID // h2
+				rel.R.Order = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.OrderItems = rel
+	}
+
 	if t.r.User != nil {
 		rel := t.r.User.o.Build()
 		rel.R.Orders = append(rel.R.Orders, o)
@@ -142,6 +161,10 @@ func (o OrderTemplate) BuildSetter() *models.OrderSetter {
 	if o.PaymentMethod != nil {
 		val := o.PaymentMethod()
 		m.PaymentMethod = omit.From(val)
+	}
+	if o.Currency != nil {
+		val := o.Currency()
+		m.Currency = omit.From(val)
 	}
 	if o.CreatedAt != nil {
 		val := o.CreatedAt()
@@ -211,6 +234,9 @@ func (o OrderTemplate) Build() *models.Order {
 	}
 	if o.PaymentMethod != nil {
 		m.PaymentMethod = o.PaymentMethod()
+	}
+	if o.Currency != nil {
+		m.Currency = o.Currency()
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
@@ -282,6 +308,26 @@ func ensureCreatableOrder(m *models.OrderSetter) {
 func (o *OrderTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *models.Order) error {
 	var err error
 
+	isOrderItemsDone, _ := orderRelOrderItemsCtx.Value(ctx)
+	if !isOrderItemsDone && o.r.OrderItems != nil {
+		ctx = orderRelOrderItemsCtx.WithValue(ctx, true)
+		for _, r := range o.r.OrderItems {
+			if r.o.alreadyPersisted {
+				m.R.OrderItems = append(m.R.OrderItems, r.o.Build())
+			} else {
+				rel0, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachOrderItems(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return err
 }
 
@@ -296,25 +342,25 @@ func (o *OrderTemplate) Create(ctx context.Context, exec bob.Executor) (*models.
 		OrderMods.WithNewUser().Apply(ctx, o)
 	}
 
-	var rel0 *models.User
+	var rel1 *models.User
 
 	if o.r.User.o.alreadyPersisted {
-		rel0 = o.r.User.o.Build()
+		rel1 = o.r.User.o.Build()
 	} else {
-		rel0, err = o.r.User.o.Create(ctx, exec)
+		rel1, err = o.r.User.o.Create(ctx, exec)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	opt.UserID = omit.From(rel0.ID)
+	opt.UserID = omit.From(rel1.ID)
 
 	m, err := models.Orders.Insert(opt).One(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
 
-	m.R.User = rel0
+	m.R.User = rel1
 
 	if err := o.insertOptRels(ctx, exec, m); err != nil {
 		return nil, err
@@ -406,6 +452,7 @@ func (m orderMods) RandomizeAllColumns(f *faker.Faker) OrderMod {
 		OrderMods.RandomShippingPincode(f),
 		OrderMods.RandomPaymentStatus(f),
 		OrderMods.RandomPaymentMethod(f),
+		OrderMods.RandomCurrency(f),
 		OrderMods.RandomCreatedAt(f),
 		OrderMods.RandomUpdatedAt(f),
 	}
@@ -815,6 +862,37 @@ func (m orderMods) RandomPaymentMethod(f *faker.Faker) OrderMod {
 }
 
 // Set the model columns to this value
+func (m orderMods) Currency(val string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.Currency = func() string { return val }
+	})
+}
+
+// Set the Column from the function
+func (m orderMods) CurrencyFunc(f func() string) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.Currency = f
+	})
+}
+
+// Clear any values for the column
+func (m orderMods) UnsetCurrency() OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.Currency = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m orderMods) RandomCurrency(f *faker.Faker) OrderMod {
+	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
+		o.Currency = func() string {
+			return random_string(f, "10")
+		}
+	})
+}
+
+// Set the model columns to this value
 func (m orderMods) CreatedAt(val time.Time) OrderMod {
 	return OrderModFunc(func(_ context.Context, o *OrderTemplate) {
 		o.CreatedAt = func() time.Time { return val }
@@ -917,5 +995,53 @@ func (m orderMods) WithExistingUser(em *models.User) OrderMod {
 func (m orderMods) WithoutUser() OrderMod {
 	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
 		o.r.User = nil
+	})
+}
+
+func (m orderMods) WithOrderItems(number int, related *OrderItemTemplate) OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		o.r.OrderItems = []*orderROrderItemsR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m orderMods) WithNewOrderItems(number int, mods ...OrderItemMod) OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		related := o.f.NewOrderItemWithContext(ctx, mods...)
+		m.WithOrderItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m orderMods) AddOrderItems(number int, related *OrderItemTemplate) OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		o.r.OrderItems = append(o.r.OrderItems, &orderROrderItemsR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m orderMods) AddNewOrderItems(number int, mods ...OrderItemMod) OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		related := o.f.NewOrderItemWithContext(ctx, mods...)
+		m.AddOrderItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m orderMods) AddExistingOrderItems(existingModels ...*models.OrderItem) OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		for _, em := range existingModels {
+			o.r.OrderItems = append(o.r.OrderItems, &orderROrderItemsR{
+				o: o.f.FromExistingOrderItem(em),
+			})
+		}
+	})
+}
+
+func (m orderMods) WithoutOrderItems() OrderMod {
+	return OrderModFunc(func(ctx context.Context, o *OrderTemplate) {
+		o.r.OrderItems = nil
 	})
 }

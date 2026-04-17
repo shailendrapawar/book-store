@@ -54,7 +54,8 @@ type BooksQuery = *psql.ViewQuery[*Book, BookSlice]
 
 // bookR is where relationships are stored.
 type bookR struct {
-	CartItems CartItemSlice // cart_items.cart_items_book_id_fkey
+	CartItems  CartItemSlice  // cart_items.cart_items_book_id_fkey
+	OrderItems OrderItemSlice // order_items.order_items_book_id_fkey
 }
 
 func buildBookColumns(alias string) bookColumns {
@@ -603,6 +604,30 @@ func (os BookSlice) CartItems(mods ...bob.Mod[*dialect.SelectQuery]) CartItemsQu
 	)...)
 }
 
+// OrderItems starts a query for related objects on order_items
+func (o *Book) OrderItems(mods ...bob.Mod[*dialect.SelectQuery]) OrderItemsQuery {
+	return OrderItems.Query(append(mods,
+		sm.Where(OrderItems.Columns.BookID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os BookSlice) OrderItems(mods ...bob.Mod[*dialect.SelectQuery]) OrderItemsQuery {
+	pkID := make(pgtypes.Array[string], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
+	))
+
+	return OrderItems.Query(append(mods,
+		sm.Where(psql.Group(OrderItems.Columns.BookID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 func insertBookCartItems0(ctx context.Context, exec bob.Executor, cartItems1 []*CartItemSetter, book0 *Book) (CartItemSlice, error) {
 	for i := range cartItems1 {
 		cartItems1[i].BookID = omit.From(book0.ID)
@@ -671,6 +696,74 @@ func (book0 *Book) AttachCartItems(ctx context.Context, exec bob.Executor, relat
 	return nil
 }
 
+func insertBookOrderItems0(ctx context.Context, exec bob.Executor, orderItems1 []*OrderItemSetter, book0 *Book) (OrderItemSlice, error) {
+	for i := range orderItems1 {
+		orderItems1[i].BookID = omit.From(book0.ID)
+	}
+
+	ret, err := OrderItems.Insert(bob.ToMods(orderItems1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertBookOrderItems0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachBookOrderItems0(ctx context.Context, exec bob.Executor, count int, orderItems1 OrderItemSlice, book0 *Book) (OrderItemSlice, error) {
+	setter := &OrderItemSetter{
+		BookID: omit.From(book0.ID),
+	}
+
+	err := orderItems1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachBookOrderItems0: %w", err)
+	}
+
+	return orderItems1, nil
+}
+
+func (book0 *Book) InsertOrderItems(ctx context.Context, exec bob.Executor, related ...*OrderItemSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	orderItems1, err := insertBookOrderItems0(ctx, exec, related, book0)
+	if err != nil {
+		return err
+	}
+
+	book0.R.OrderItems = append(book0.R.OrderItems, orderItems1...)
+
+	for _, rel := range orderItems1 {
+		rel.R.Book = book0
+	}
+	return nil
+}
+
+func (book0 *Book) AttachOrderItems(ctx context.Context, exec bob.Executor, related ...*OrderItem) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	orderItems1 := OrderItemSlice(related)
+
+	_, err = attachBookOrderItems0(ctx, exec, len(related), orderItems1, book0)
+	if err != nil {
+		return err
+	}
+
+	book0.R.OrderItems = append(book0.R.OrderItems, orderItems1...)
+
+	for _, rel := range related {
+		rel.R.Book = book0
+	}
+
+	return nil
+}
+
 type bookWhere[Q psql.Filterable] struct {
 	ID          psql.WhereMod[Q, string]
 	Isbn        psql.WhereMod[Q, string]
@@ -725,6 +818,20 @@ func (o *Book) Preload(name string, retrieved any) error {
 			}
 		}
 		return nil
+	case "OrderItems":
+		rels, ok := retrieved.(OrderItemSlice)
+		if !ok {
+			return fmt.Errorf("book cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.OrderItems = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Book = o
+			}
+		}
+		return nil
 	default:
 		return fmt.Errorf("book has no relationship %q", name)
 	}
@@ -737,12 +844,16 @@ func buildBookPreloader() bookPreloader {
 }
 
 type bookThenLoader[Q orm.Loadable] struct {
-	CartItems func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	CartItems  func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	OrderItems func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildBookThenLoader[Q orm.Loadable]() bookThenLoader[Q] {
 	type CartItemsLoadInterface interface {
 		LoadCartItems(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type OrderItemsLoadInterface interface {
+		LoadOrderItems(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return bookThenLoader[Q]{
@@ -750,6 +861,12 @@ func buildBookThenLoader[Q orm.Loadable]() bookThenLoader[Q] {
 			"CartItems",
 			func(ctx context.Context, exec bob.Executor, retrieved CartItemsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadCartItems(ctx, exec, mods...)
+			},
+		),
+		OrderItems: thenLoadBuilder[Q](
+			"OrderItems",
+			func(ctx context.Context, exec bob.Executor, retrieved OrderItemsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadOrderItems(ctx, exec, mods...)
 			},
 		),
 	}
@@ -816,9 +933,71 @@ func (os BookSlice) LoadCartItems(ctx context.Context, exec bob.Executor, mods .
 	return nil
 }
 
+// LoadOrderItems loads the book's OrderItems into the .R struct
+func (o *Book) LoadOrderItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.OrderItems = nil
+
+	related, err := o.OrderItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Book = o
+	}
+
+	o.R.OrderItems = related
+	return nil
+}
+
+// LoadOrderItems loads the book's OrderItems into the .R struct
+func (os BookSlice) LoadOrderItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	orderItems, err := os.OrderItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.OrderItems = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range orderItems {
+
+			if !(o.ID == rel.BookID) {
+				continue
+			}
+
+			rel.R.Book = o
+
+			o.R.OrderItems = append(o.R.OrderItems, rel)
+		}
+	}
+
+	return nil
+}
+
 type bookJoins[Q dialect.Joinable] struct {
-	typ       string
-	CartItems modAs[Q, cartItemColumns]
+	typ        string
+	CartItems  modAs[Q, cartItemColumns]
+	OrderItems modAs[Q, orderItemColumns]
 }
 
 func (j bookJoins[Q]) aliasedAs(alias string) bookJoins[Q] {
@@ -835,6 +1014,20 @@ func buildBookJoins[Q dialect.Joinable](cols bookColumns, typ string) bookJoins[
 
 				{
 					mods = append(mods, dialect.Join[Q](typ, CartItems.Name().As(to.Alias())).On(
+						to.BookID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		OrderItems: modAs[Q, orderItemColumns]{
+			c: OrderItems.Columns,
+			f: func(to orderItemColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, OrderItems.Name().As(to.Alias())).On(
 						to.BookID.EQ(cols.ID),
 					))
 				}

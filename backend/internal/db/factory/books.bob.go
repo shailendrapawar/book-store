@@ -57,12 +57,17 @@ type BookTemplate struct {
 }
 
 type bookR struct {
-	CartItems []*bookRCartItemsR
+	CartItems  []*bookRCartItemsR
+	OrderItems []*bookROrderItemsR
 }
 
 type bookRCartItemsR struct {
 	number int
 	o      *CartItemTemplate
+}
+type bookROrderItemsR struct {
+	number int
+	o      *OrderItemTemplate
 }
 
 // Apply mods to the BookTemplate
@@ -86,6 +91,19 @@ func (t BookTemplate) setModelRels(o *models.Book) {
 			rel = append(rel, related...)
 		}
 		o.R.CartItems = rel
+	}
+
+	if t.r.OrderItems != nil {
+		rel := models.OrderItemSlice{}
+		for _, r := range t.r.OrderItems {
+			related := r.o.BuildMany(r.number)
+			for _, rel := range related {
+				rel.BookID = o.ID // h2
+				rel.R.Book = o
+			}
+			rel = append(rel, related...)
+		}
+		o.R.OrderItems = rel
 	}
 }
 
@@ -254,6 +272,26 @@ func (o *BookTemplate) insertOptRels(ctx context.Context, exec bob.Executor, m *
 				}
 
 				err = m.AttachCartItems(ctx, exec, rel0...)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	isOrderItemsDone, _ := bookRelOrderItemsCtx.Value(ctx)
+	if !isOrderItemsDone && o.r.OrderItems != nil {
+		ctx = bookRelOrderItemsCtx.WithValue(ctx, true)
+		for _, r := range o.r.OrderItems {
+			if r.o.alreadyPersisted {
+				m.R.OrderItems = append(m.R.OrderItems, r.o.Build())
+			} else {
+				rel1, err := r.o.CreateMany(ctx, exec, r.number)
+				if err != nil {
+					return err
+				}
+
+				err = m.AttachOrderItems(ctx, exec, rel1...)
 				if err != nil {
 					return err
 				}
@@ -784,5 +822,53 @@ func (m bookMods) AddExistingCartItems(existingModels ...*models.CartItem) BookM
 func (m bookMods) WithoutCartItems() BookMod {
 	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
 		o.r.CartItems = nil
+	})
+}
+
+func (m bookMods) WithOrderItems(number int, related *OrderItemTemplate) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.OrderItems = []*bookROrderItemsR{{
+			number: number,
+			o:      related,
+		}}
+	})
+}
+
+func (m bookMods) WithNewOrderItems(number int, mods ...OrderItemMod) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		related := o.f.NewOrderItemWithContext(ctx, mods...)
+		m.WithOrderItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m bookMods) AddOrderItems(number int, related *OrderItemTemplate) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.OrderItems = append(o.r.OrderItems, &bookROrderItemsR{
+			number: number,
+			o:      related,
+		})
+	})
+}
+
+func (m bookMods) AddNewOrderItems(number int, mods ...OrderItemMod) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		related := o.f.NewOrderItemWithContext(ctx, mods...)
+		m.AddOrderItems(number, related).Apply(ctx, o)
+	})
+}
+
+func (m bookMods) AddExistingOrderItems(existingModels ...*models.OrderItem) BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		for _, em := range existingModels {
+			o.r.OrderItems = append(o.r.OrderItems, &bookROrderItemsR{
+				o: o.f.FromExistingOrderItem(em),
+			})
+		}
+	})
+}
+
+func (m bookMods) WithoutOrderItems() BookMod {
+	return BookModFunc(func(ctx context.Context, o *BookTemplate) {
+		o.r.OrderItems = nil
 	})
 }

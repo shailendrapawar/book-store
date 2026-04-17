@@ -15,12 +15,13 @@ import (
 )
 
 type Factory struct {
-	baseAddressMods  AddressModSlice
-	baseBookMods     BookModSlice
-	baseCartItemMods CartItemModSlice
-	baseCartMods     CartModSlice
-	baseOrderMods    OrderModSlice
-	baseUserMods     UserModSlice
+	baseAddressMods   AddressModSlice
+	baseBookMods      BookModSlice
+	baseCartItemMods  CartItemModSlice
+	baseCartMods      CartModSlice
+	baseOrderItemMods OrderItemModSlice
+	baseOrderMods     OrderModSlice
+	baseUserMods      UserModSlice
 }
 
 func New() *Factory {
@@ -104,6 +105,9 @@ func (f *Factory) FromExistingBook(m *models.Book) *BookTemplate {
 	if len(m.R.CartItems) > 0 {
 		BookMods.AddExistingCartItems(m.R.CartItems...).Apply(ctx, o)
 	}
+	if len(m.R.OrderItems) > 0 {
+		BookMods.AddExistingOrderItems(m.R.OrderItems...).Apply(ctx, o)
+	}
 
 	return o
 }
@@ -180,6 +184,46 @@ func (f *Factory) FromExistingCart(m *models.Cart) *CartTemplate {
 	return o
 }
 
+func (f *Factory) NewOrderItem(mods ...OrderItemMod) *OrderItemTemplate {
+	return f.NewOrderItemWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewOrderItemWithContext(ctx context.Context, mods ...OrderItemMod) *OrderItemTemplate {
+	o := &OrderItemTemplate{f: f}
+
+	if f != nil {
+		f.baseOrderItemMods.Apply(ctx, o)
+	}
+
+	OrderItemModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingOrderItem(m *models.OrderItem) *OrderItemTemplate {
+	o := &OrderItemTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() string { return m.ID }
+	o.OrderID = func() string { return m.OrderID }
+	o.BookID = func() string { return m.BookID }
+	o.Title = func() string { return m.Title }
+	o.Price = func() decimal.Decimal { return m.Price }
+	o.Quantity = func() int32 { return m.Quantity }
+	o.TotalPrice = func() decimal.Decimal { return m.TotalPrice }
+	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
+
+	ctx := context.Background()
+	if m.R.Book != nil {
+		OrderItemMods.WithExistingBook(m.R.Book).Apply(ctx, o)
+	}
+	if m.R.Order != nil {
+		OrderItemMods.WithExistingOrder(m.R.Order).Apply(ctx, o)
+	}
+
+	return o
+}
+
 func (f *Factory) NewOrder(mods ...OrderMod) *OrderTemplate {
 	return f.NewOrderWithContext(context.Background(), mods...)
 }
@@ -212,10 +256,14 @@ func (f *Factory) FromExistingOrder(m *models.Order) *OrderTemplate {
 	o.ShippingPincode = func() string { return m.ShippingPincode }
 	o.PaymentStatus = func() string { return m.PaymentStatus }
 	o.PaymentMethod = func() string { return m.PaymentMethod }
+	o.Currency = func() string { return m.Currency }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.UpdatedAt = func() time.Time { return m.UpdatedAt }
 
 	ctx := context.Background()
+	if len(m.R.OrderItems) > 0 {
+		OrderMods.AddExistingOrderItems(m.R.OrderItems...).Apply(ctx, o)
+	}
 	if m.R.User != nil {
 		OrderMods.WithExistingUser(m.R.User).Apply(ctx, o)
 	}
@@ -294,6 +342,14 @@ func (f *Factory) ClearBaseCartMods() {
 
 func (f *Factory) AddBaseCartMod(mods ...CartMod) {
 	f.baseCartMods = append(f.baseCartMods, mods...)
+}
+
+func (f *Factory) ClearBaseOrderItemMods() {
+	f.baseOrderItemMods = nil
+}
+
+func (f *Factory) AddBaseOrderItemMod(mods ...OrderItemMod) {
+	f.baseOrderItemMods = append(f.baseOrderItemMods, mods...)
 }
 
 func (f *Factory) ClearBaseOrderMods() {

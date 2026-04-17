@@ -59,10 +59,8 @@ definitions:
       isbn:
         type: string
       price:
-        format: float64
         type: number
       stock:
-        format: int32
         type: integer
       title:
         type: string
@@ -73,6 +71,10 @@ definitions:
         type: string
       id:
         type: string
+      items:
+        items:
+          $ref: '#/definitions/adapters.CartItem'
+        type: array
       updated_at:
         type: string
       user_id:
@@ -153,14 +155,11 @@ definitions:
     properties:
       address_id:
         type: string
-      coupon:
+      coupon_id:
         type: string
       notes:
         type: string
       payment_method:
-        enum:
-        - cod
-        - online
         type: string
     required:
     - address_id
@@ -187,39 +186,6 @@ definitions:
       role:
         type: string
       token:
-        type: string
-    type: object
-  adapters.Order:
-    properties:
-      created_at:
-        type: string
-      discount_type:
-        type: string
-      discount_value:
-        type: number
-      gross_amount:
-        type: number
-      id:
-        type: string
-      net_amount:
-        type: number
-      payment_method:
-        type: string
-      payment_status:
-        type: string
-      shipping_address:
-        type: string
-      shipping_city:
-        type: string
-      shipping_pincode:
-        type: string
-      shipping_state:
-        type: string
-      status:
-        type: string
-      updated_at:
-        type: string
-      user_id:
         type: string
     type: object
   adapters.Pagination:
@@ -931,39 +897,31 @@ paths:
     post:
       consumes:
       - application/json
-      description: Place a new order using items from the user's cart
+      description: Creates an order from the user's cart with optional coupon
       parameters:
       - description: Create Order Request
         in: body
-        name: payload
+        name: request
         required: true
         schema:
           $ref: '#/definitions/adapters.CreateOrderRequest'
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Order created successfully
           schema:
-            $ref: '#/definitions/adapters.Order'
+            type: object
         "400":
-          description: Bad Request
+          description: Invalid request / cart empty / business error
           schema:
-            additionalProperties:
-              type: string
             type: object
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
             type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+      security:
+      - BearerAuth: []
       summary: Create a new order
       tags:
       - Orders

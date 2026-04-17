@@ -1,16 +1,16 @@
 package adapters
 
 type Book struct {
-	ID          string
-	Title       string
-	Description string
-	Author      string
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Author      string `json:"author"`
 
-	Isbn string
+	Isbn string `json:"isbn"`
 
-	Price    float64
-	Stock    int32
-	IsActive bool
+	Price    float64 `json:"price"`
+	Stock    int32   `json:"stock"`
+	IsActive bool    `json:"isActive"`
 }
 
 type CreateBookRequest struct {

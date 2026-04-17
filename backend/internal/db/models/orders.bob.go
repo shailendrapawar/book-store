@@ -40,6 +40,7 @@ type Order struct {
 	ShippingPincode string                      `db:"shipping_pincode" `
 	PaymentStatus   string                      `db:"payment_status" `
 	PaymentMethod   string                      `db:"payment_method" `
+	Currency        string                      `db:"currency" `
 	CreatedAt       time.Time                   `db:"created_at" `
 	UpdatedAt       time.Time                   `db:"updated_at" `
 
@@ -58,13 +59,14 @@ type OrdersQuery = *psql.ViewQuery[*Order, OrderSlice]
 
 // orderR is where relationships are stored.
 type orderR struct {
-	User *User // orders.orders_user_id_fkey
+	OrderItems OrderItemSlice // order_items.order_items_order_id_fkey
+	User       *User          // orders.orders_user_id_fkey
 }
 
 func buildOrderColumns(alias string) orderColumns {
 	return orderColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "user_id", "status", "discount_value", "discount_type", "gross_amount", "net_amount", "shipping_address", "shipping_city", "shipping_state", "shipping_pincode", "payment_status", "payment_method", "created_at", "updated_at",
+			"id", "user_id", "status", "discount_value", "discount_type", "gross_amount", "net_amount", "shipping_address", "shipping_city", "shipping_state", "shipping_pincode", "payment_status", "payment_method", "currency", "created_at", "updated_at",
 		).WithParent("orders"),
 		tableAlias:      alias,
 		ID:              psql.Quote(alias, "id"),
@@ -80,6 +82,7 @@ func buildOrderColumns(alias string) orderColumns {
 		ShippingPincode: psql.Quote(alias, "shipping_pincode"),
 		PaymentStatus:   psql.Quote(alias, "payment_status"),
 		PaymentMethod:   psql.Quote(alias, "payment_method"),
+		Currency:        psql.Quote(alias, "currency"),
 		CreatedAt:       psql.Quote(alias, "created_at"),
 		UpdatedAt:       psql.Quote(alias, "updated_at"),
 	}
@@ -101,6 +104,7 @@ type orderColumns struct {
 	ShippingPincode psql.Expression
 	PaymentStatus   psql.Expression
 	PaymentMethod   psql.Expression
+	Currency        psql.Expression
 	CreatedAt       psql.Expression
 	UpdatedAt       psql.Expression
 }
@@ -130,12 +134,13 @@ type OrderSetter struct {
 	ShippingPincode omit.Val[string]                      `db:"shipping_pincode" `
 	PaymentStatus   omit.Val[string]                      `db:"payment_status" `
 	PaymentMethod   omit.Val[string]                      `db:"payment_method" `
+	Currency        omit.Val[string]                      `db:"currency" `
 	CreatedAt       omit.Val[time.Time]                   `db:"created_at" `
 	UpdatedAt       omit.Val[time.Time]                   `db:"updated_at" `
 }
 
 func (s OrderSetter) SetColumns() []string {
-	vals := make([]string, 0, 15)
+	vals := make([]string, 0, 16)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -174,6 +179,9 @@ func (s OrderSetter) SetColumns() []string {
 	}
 	if s.PaymentMethod.IsValue() {
 		vals = append(vals, "payment_method")
+	}
+	if s.Currency.IsValue() {
+		vals = append(vals, "currency")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -224,6 +232,9 @@ func (s OrderSetter) Overwrite(t *Order) {
 	if s.PaymentMethod.IsValue() {
 		t.PaymentMethod = s.PaymentMethod.MustGet()
 	}
+	if s.Currency.IsValue() {
+		t.Currency = s.Currency.MustGet()
+	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
@@ -238,7 +249,7 @@ func (s *OrderSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 15)
+		vals := make([]bob.Expression, 16)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -317,16 +328,22 @@ func (s *OrderSetter) Apply(q *dialect.InsertQuery) {
 			vals[12] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[13] = psql.Arg(s.CreatedAt.MustGet())
+		if s.Currency.IsValue() {
+			vals[13] = psql.Arg(s.Currency.MustGet())
 		} else {
 			vals[13] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsValue() {
-			vals[14] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsValue() {
+			vals[14] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[14] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsValue() {
+			vals[15] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[15] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -338,7 +355,7 @@ func (s OrderSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s OrderSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 15)
+	exprs := make([]bob.Expression, 0, 16)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -428,6 +445,13 @@ func (s OrderSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "payment_method")...),
 			psql.Arg(s.PaymentMethod),
+		}})
+	}
+
+	if s.Currency.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "currency")...),
+			psql.Arg(s.Currency),
 		}})
 	}
 
@@ -671,6 +695,30 @@ func (o OrderSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// OrderItems starts a query for related objects on order_items
+func (o *Order) OrderItems(mods ...bob.Mod[*dialect.SelectQuery]) OrderItemsQuery {
+	return OrderItems.Query(append(mods,
+		sm.Where(OrderItems.Columns.OrderID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os OrderSlice) OrderItems(mods ...bob.Mod[*dialect.SelectQuery]) OrderItemsQuery {
+	pkID := make(pgtypes.Array[string], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "character varying[]")),
+	))
+
+	return OrderItems.Query(append(mods,
+		sm.Where(psql.Group(OrderItems.Columns.OrderID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // User starts a query for related objects on users
 func (o *Order) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
 	return Users.Query(append(mods,
@@ -693,6 +741,74 @@ func (os OrderSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
 	return Users.Query(append(mods,
 		sm.Where(psql.Group(Users.Columns.ID).OP("IN", PKArgExpr)),
 	)...)
+}
+
+func insertOrderOrderItems0(ctx context.Context, exec bob.Executor, orderItems1 []*OrderItemSetter, order0 *Order) (OrderItemSlice, error) {
+	for i := range orderItems1 {
+		orderItems1[i].OrderID = omit.From(order0.ID)
+	}
+
+	ret, err := OrderItems.Insert(bob.ToMods(orderItems1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertOrderOrderItems0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachOrderOrderItems0(ctx context.Context, exec bob.Executor, count int, orderItems1 OrderItemSlice, order0 *Order) (OrderItemSlice, error) {
+	setter := &OrderItemSetter{
+		OrderID: omit.From(order0.ID),
+	}
+
+	err := orderItems1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachOrderOrderItems0: %w", err)
+	}
+
+	return orderItems1, nil
+}
+
+func (order0 *Order) InsertOrderItems(ctx context.Context, exec bob.Executor, related ...*OrderItemSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	orderItems1, err := insertOrderOrderItems0(ctx, exec, related, order0)
+	if err != nil {
+		return err
+	}
+
+	order0.R.OrderItems = append(order0.R.OrderItems, orderItems1...)
+
+	for _, rel := range orderItems1 {
+		rel.R.Order = order0
+	}
+	return nil
+}
+
+func (order0 *Order) AttachOrderItems(ctx context.Context, exec bob.Executor, related ...*OrderItem) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	orderItems1 := OrderItemSlice(related)
+
+	_, err = attachOrderOrderItems0(ctx, exec, len(related), orderItems1, order0)
+	if err != nil {
+		return err
+	}
+
+	order0.R.OrderItems = append(order0.R.OrderItems, orderItems1...)
+
+	for _, rel := range related {
+		rel.R.Order = order0
+	}
+
+	return nil
 }
 
 func attachOrderUser0(ctx context.Context, exec bob.Executor, count int, order0 *Order, user1 *User) (*Order, error) {
@@ -757,6 +873,7 @@ type orderWhere[Q psql.Filterable] struct {
 	ShippingPincode psql.WhereMod[Q, string]
 	PaymentStatus   psql.WhereMod[Q, string]
 	PaymentMethod   psql.WhereMod[Q, string]
+	Currency        psql.WhereMod[Q, string]
 	CreatedAt       psql.WhereMod[Q, time.Time]
 	UpdatedAt       psql.WhereMod[Q, time.Time]
 }
@@ -780,6 +897,7 @@ func buildOrderWhere[Q psql.Filterable](cols orderColumns) orderWhere[Q] {
 		ShippingPincode: psql.Where[Q, string](cols.ShippingPincode),
 		PaymentStatus:   psql.Where[Q, string](cols.PaymentStatus),
 		PaymentMethod:   psql.Where[Q, string](cols.PaymentMethod),
+		Currency:        psql.Where[Q, string](cols.Currency),
 		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt:       psql.Where[Q, time.Time](cols.UpdatedAt),
 	}
@@ -791,6 +909,20 @@ func (o *Order) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "OrderItems":
+		rels, ok := retrieved.(OrderItemSlice)
+		if !ok {
+			return fmt.Errorf("order cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.OrderItems = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Order = o
+			}
+		}
+		return nil
 	case "User":
 		rel, ok := retrieved.(*User)
 		if !ok {
@@ -831,15 +963,25 @@ func buildOrderPreloader() orderPreloader {
 }
 
 type orderThenLoader[Q orm.Loadable] struct {
-	User func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	OrderItems func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	User       func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildOrderThenLoader[Q orm.Loadable]() orderThenLoader[Q] {
+	type OrderItemsLoadInterface interface {
+		LoadOrderItems(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type UserLoadInterface interface {
 		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return orderThenLoader[Q]{
+		OrderItems: thenLoadBuilder[Q](
+			"OrderItems",
+			func(ctx context.Context, exec bob.Executor, retrieved OrderItemsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadOrderItems(ctx, exec, mods...)
+			},
+		),
 		User: thenLoadBuilder[Q](
 			"User",
 			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -847,6 +989,67 @@ func buildOrderThenLoader[Q orm.Loadable]() orderThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadOrderItems loads the order's OrderItems into the .R struct
+func (o *Order) LoadOrderItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.OrderItems = nil
+
+	related, err := o.OrderItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Order = o
+	}
+
+	o.R.OrderItems = related
+	return nil
+}
+
+// LoadOrderItems loads the order's OrderItems into the .R struct
+func (os OrderSlice) LoadOrderItems(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	orderItems, err := os.OrderItems(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.OrderItems = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range orderItems {
+
+			if !(o.ID == rel.OrderID) {
+				continue
+			}
+
+			rel.R.Order = o
+
+			o.R.OrderItems = append(o.R.OrderItems, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadUser loads the order's User into the .R struct
@@ -902,8 +1105,9 @@ func (os OrderSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bo
 }
 
 type orderJoins[Q dialect.Joinable] struct {
-	typ  string
-	User modAs[Q, userColumns]
+	typ        string
+	OrderItems modAs[Q, orderItemColumns]
+	User       modAs[Q, userColumns]
 }
 
 func (j orderJoins[Q]) aliasedAs(alias string) orderJoins[Q] {
@@ -913,6 +1117,20 @@ func (j orderJoins[Q]) aliasedAs(alias string) orderJoins[Q] {
 func buildOrderJoins[Q dialect.Joinable](cols orderColumns, typ string) orderJoins[Q] {
 	return orderJoins[Q]{
 		typ: typ,
+		OrderItems: modAs[Q, orderItemColumns]{
+			c: OrderItems.Columns,
+			f: func(to orderItemColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, OrderItems.Name().As(to.Alias())).On(
+						to.OrderID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		User: modAs[Q, userColumns]{
 			c: Users.Columns,
 			f: func(to userColumns) bob.Mod[Q] {

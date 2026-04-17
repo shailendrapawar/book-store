@@ -132,6 +132,15 @@ var Orders = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Currency: column{
+			Name:      "currency",
+			DBType:    "character varying",
+			Default:   "'INR'::character varying",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp without time zone",
@@ -218,7 +227,7 @@ var Orders = Table[
 				Columns: []string{"gross_amount"},
 				Comment: "",
 			},
-			Expression: "(gross_amount > (0)::numeric)",
+			Expression: "(gross_amount >= (0)::numeric)",
 		},
 		OrdersNetAmountCheck: check{
 			constraint: constraint{
@@ -226,7 +235,7 @@ var Orders = Table[
 				Columns: []string{"net_amount"},
 				Comment: "",
 			},
-			Expression: "(net_amount > (0)::numeric)",
+			Expression: "(net_amount >= (0)::numeric)",
 		},
 		OrdersPaymentMethodCheck: check{
 			constraint: constraint{
@@ -270,13 +279,14 @@ type orderColumns struct {
 	ShippingPincode column
 	PaymentStatus   column
 	PaymentMethod   column
+	Currency        column
 	CreatedAt       column
 	UpdatedAt       column
 }
 
 func (c orderColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.UserID, c.Status, c.DiscountValue, c.DiscountType, c.GrossAmount, c.NetAmount, c.ShippingAddress, c.ShippingCity, c.ShippingState, c.ShippingPincode, c.PaymentStatus, c.PaymentMethod, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.UserID, c.Status, c.DiscountValue, c.DiscountType, c.GrossAmount, c.NetAmount, c.ShippingAddress, c.ShippingCity, c.ShippingState, c.ShippingPincode, c.PaymentStatus, c.PaymentMethod, c.Currency, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

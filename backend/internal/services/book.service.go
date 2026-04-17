@@ -8,14 +8,15 @@ import (
 
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
 type BookService interface {
-	Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error)
-	Get(ctx context.Context, identifier string) (interface{}, error)
-	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error)
-	Search(ctx context.Context, pagination adapters.PaginationRequest) (interface{}, error)
+	Create(ctx context.Context, req *adapters.CreateBookRequest) (*adapters.Book, error)
+	Get(ctx context.Context, identifier string) (*adapters.Book, error)
+	Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (*adapters.Book, error)
+	Search(ctx context.Context, pagination adapters.PaginationRequest) ([]*adapters.Book, error)
 }
 
 type bookService struct {
@@ -28,7 +29,7 @@ func NewBookService(db *sql.DB) BookService {
 	}
 }
 
-func (s *bookService) Create(ctx context.Context, req *adapters.CreateBookRequest) (interface{}, error) {
+func (s *bookService) Create(ctx context.Context, req *adapters.CreateBookRequest) (*adapters.Book, error) {
 
 	result, err := s.bookDao.Create(ctx, req)
 
@@ -36,12 +37,20 @@ func (s *bookService) Create(ctx context.Context, req *adapters.CreateBookReques
 		return nil, err
 	}
 
-	return result, nil
+	return &adapters.Book{
+		ID:          result.ID,
+		Title:       result.Title,
+		Description: utils.ExtractNullString(result.Description),
+		Price:       utils.ExtractFloat(result.Price),
+		Isbn:        result.Isbn,
+		Stock:       result.Stock,
+		Author:      result.Author,
+	}, nil
 }
 
-func (s *bookService) Get(ctx context.Context, identifier string) (interface{}, error) {
+func (s *bookService) Get(ctx context.Context, identifier string) (*adapters.Book, error) {
 
-	var book interface{}
+	var book *models.Book
 	//find whether its id or isbn
 	if utils.IsUUID(identifier) {
 		fmt.Print("UUID=====>")
@@ -63,23 +72,54 @@ func (s *bookService) Get(ctx context.Context, identifier string) (interface{}, 
 		//invalid characters
 		return nil, errors.New("Invalid identifier/id")
 	}
-	return book, nil
+
+	return &adapters.Book{
+		ID:          book.ID,
+		Title:       book.Title,
+		Description: utils.ExtractNullString(book.Description),
+		Price:       utils.ExtractFloat(book.Price),
+		Isbn:        book.Isbn,
+		Stock:       book.Stock,
+		Author:      book.Author,
+	}, nil
+
 }
 
-func (s *bookService) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (interface{}, error) {
+func (s *bookService) Update(ctx context.Context, id string, payload adapters.UpdateBookRequest) (*adapters.Book, error) {
 
 	res, err := s.bookDao.Update(ctx, id, payload)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return &adapters.Book{
+		ID:          res.ID,
+		Title:       res.Title,
+		Description: utils.ExtractNullString(res.Description),
+		Price:       utils.ExtractFloat(res.Price),
+		Isbn:        res.Isbn,
+		Stock:       res.Stock,
+		Author:      res.Author,
+	}, nil
 }
 
-func (s *bookService) Search(ctx context.Context, pagination adapters.PaginationRequest) (interface{}, error) {
+func (s *bookService) Search(ctx context.Context, pagination adapters.PaginationRequest) ([]*adapters.Book, error) {
 
 	res, err := s.bookDao.Search(ctx, pagination)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+
+	items := make([]*adapters.Book, len(res))
+	for i, book := range res {
+		items[i] = &adapters.Book{
+			ID:          book.ID,
+			Title:       book.Title,
+			Description: utils.ExtractNullString(book.Description),
+			Price:       utils.ExtractFloat(book.Price),
+			Isbn:        book.Isbn,
+			Stock:       book.Stock,
+			Author:      book.Author,
+		}
+	}
+	return items, nil
 }
