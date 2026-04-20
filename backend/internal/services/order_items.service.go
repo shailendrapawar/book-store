@@ -6,6 +6,7 @@ import (
 
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
@@ -13,6 +14,8 @@ type OrderItemsService interface {
 	Create(ctx context.Context,
 		orderID string,
 		books []*adapters.Book, priceMap map[string]adapters.OrderItemMap) ([]*adapters.OrderItem, error)
+
+	Search(ctx context.Context, filters adapters.SearchOrderItemsFilters) ([]*adapters.OrderItem, error)
 }
 type orderItemsServiceImpl struct {
 	orderItemDAO dao.OrderItemDAO
@@ -48,18 +51,37 @@ func (s orderItemsServiceImpl) Create(ctx context.Context,
 			return nil, err
 		}
 
-		orderItem := &adapters.OrderItem{
-			ID:         res.ID,
-			OrderID:    res.OrderID,
-			BookID:     res.BookID,
-			Title:      res.Title,
-			Price:      utils.ExtractFloat(res.Price),
-			Quantity:   int(res.Quantity),
-			TotalPrice: utils.ExtractFloat(res.TotalPrice),
-		}
+		orderItem := s.toAdapter(*res)
 		result = append(result, orderItem)
 	}
 
 	//return mapped data
 	return result, nil
+}
+
+func (s orderItemsServiceImpl) Search(ctx context.Context, filters adapters.SearchOrderItemsFilters) ([]*adapters.OrderItem, error) {
+
+	items, err := s.orderItemDAO.Search(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*adapters.OrderItem
+	for _, v := range items {
+		result = append(result, s.toAdapter(*v))
+	}
+	return result, nil
+}
+
+func (s *orderItemsServiceImpl) toAdapter(data models.OrderItem) *adapters.OrderItem {
+	return &adapters.OrderItem{
+		ID:         data.ID,
+		OrderID:    data.OrderID,
+		BookID:     data.BookID,
+		Title:      data.Title,
+		Price:      utils.ExtractFloat(data.Price),
+		Quantity:   int(data.Quantity),
+		TotalPrice: utils.ExtractFloat(data.TotalPrice),
+	}
+
 }

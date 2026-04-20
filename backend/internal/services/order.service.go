@@ -15,6 +15,8 @@ type OrderService interface {
 		payload *adapters.CreateOrderRequest,
 		userCart *adapters.Cart, user *adapters.Claims,
 	) (*adapters.Order, error)
+
+	Get(ctx context.Context, orderID string) (*adapters.Order, error)
 }
 
 type orderServiceImpl struct {
@@ -142,4 +144,40 @@ func (s *orderServiceImpl) getCartBooksWithPrice(ctx context.Context, userCart *
 
 	return books, &orderGrossAmount, orderItemMap, nil
 
+}
+
+func (s *orderServiceImpl) Get(ctx context.Context, orderID string) (*adapters.Order, error) {
+	res, err := s.orderDao.Get(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	orderItems, err := s.orderItemsService.Search(ctx, adapters.SearchOrderItemsFilters{OrderID: &orderID})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adapters.Order{
+		Id:     res.ID,
+		UserId: res.UserID,
+		Status: res.Status,
+
+		DiscountValue: utils.ExtractFloat(res.DiscountValue),
+		DiscountType:  res.DiscountType,
+
+		GrossAmount: float64(res.GrossAmount.NumDigits()),
+		NetAmount:   utils.ExtractFloat(res.NetAmount),
+
+		ShippingAddress: string(res.ShippingAddress.Val),
+		ShippingCity:    res.ShippingCity,
+		ShippingState:   res.ShippingState,
+		ShippingPincode: res.ShippingPincode,
+
+		PaymentMethod: res.PaymentMethod,
+		PaymentStatus: res.PaymentStatus,
+
+		CreatedAt: res.CreatedAt,
+		UpdatedAt: res.UpdatedAt,
+		Items:     orderItems,
+	}, nil
 }

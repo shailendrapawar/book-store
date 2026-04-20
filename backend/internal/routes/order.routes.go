@@ -18,4 +18,5 @@ func OrderRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	//init controller with passing db
 	orderController := controllers.NewOrderController(db, cfg)
 	orderRouter.POST("/", orderController.Create)
+	orderRouter.GET("/:id", orderController.Get)
 }

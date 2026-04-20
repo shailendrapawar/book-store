@@ -29,3 +29,8 @@ type CreateOrderItemPayload struct {
 	Quantity   int     `json:"quantity"`
 	TotalPrice float64 `json:"total_price"`
 }
+
+type SearchOrderItemsFilters struct {
+	OrderID *string `json:"order_id" binding:"omitempty"`
+	// BookID  *string `json:"book_id"`
+}

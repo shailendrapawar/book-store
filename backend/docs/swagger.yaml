@@ -925,6 +925,37 @@ paths:
       summary: Create a new order
       tags:
       - Orders
+  /api/v1/orders/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a single order with its details using order ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order found
+          schema:
+            type: object
+        "400":
+          description: Invalid order ID / order not found
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - Orders
   /api/v1/users/{keyword}:
     get:
       consumes:

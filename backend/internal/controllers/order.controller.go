@@ -13,6 +13,7 @@ import (
 
 type OrderController interface {
 	Create(ginContext *gin.Context)
+	Get(ginContext *gin.Context)
 }
 
 type orderControllerImpl struct {
@@ -39,7 +40,7 @@ func NewOrderController(db *sql.DB, cfg *config.Config) OrderController {
 // @Failure      400      {object}  object  "Invalid request / cart empty / business error"
 // @Failure      401      {object}  object  "Unauthorized"
 // @Router       /api/v1/orders [post]
-func (o *orderControllerImpl) Create(ginContext *gin.Context) {
+func (c *orderControllerImpl) Create(ginContext *gin.Context) {
 
 	//1: get request-context and user
 	reqContext := ginContext.Request.Context()
@@ -53,7 +54,7 @@ func (o *orderControllerImpl) Create(ginContext *gin.Context) {
 	}
 
 	//3: find user cart
-	userCart, err := o.cartService.GetByUserID(reqContext, user.UserID)
+	userCart, err := c.cartService.GetByUserID(reqContext, user.UserID)
 	if err != nil || len(userCart.Items) == 0 {
 		//return back if cart not found or empty cart
 		utils.HandleErrorResponse(ginContext, 400, "Invalid cart", nil)
@@ -61,7 +62,7 @@ func (o *orderControllerImpl) Create(ginContext *gin.Context) {
 	}
 
 	//4: call service
-	res, err := o.orderService.Create(reqContext, &req, userCart, user)
+	res, err := c.orderService.Create(reqContext, &req, userCart, user)
 
 	if err != nil {
 		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
@@ -69,5 +70,32 @@ func (o *orderControllerImpl) Create(ginContext *gin.Context) {
 	}
 
 	utils.HandleSuccessResponse(ginContext, 200, "Order created successfully", res)
+
+}
+
+// GetOrder godoc
+// @Summary      Get order by ID
+// @Description  Fetch a single order with its details using order ID
+// @Tags         Orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Order ID"
+// @Success      200  {object}  object  "Order found"
+// @Failure      400  {object}  object  "Invalid order ID / order not found"
+// @Failure      401  {object}  object  "Unauthorized"
+// @Router       /api/v1/orders/{id} [get]
+func (o *orderControllerImpl) Get(ginContext *gin.Context) {
+
+	reqCtx := ginContext.Request.Context()
+	orderID := ginContext.Param("id")
+
+	res, err := o.orderService.Get(reqCtx, orderID)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Order found", res)
 
 }

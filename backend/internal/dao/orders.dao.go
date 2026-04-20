@@ -15,6 +15,7 @@ import (
 
 type Orders interface {
 	Create(ctx context.Context, payload *adapters.CreateOrderPayload) (*models.Order, error)
+	Get(ctx context.Context, orderID string) (*models.Order, error)
 }
 
 type ordersDAOImpl struct {
@@ -67,4 +68,16 @@ func (d *ordersDAOImpl) Create(ctx context.Context, payload *adapters.CreateOrde
 
 	return order, nil
 
+}
+
+func (d *ordersDAOImpl) Get(ctx context.Context, orderID string) (*models.Order, error) {
+	order, err := models.Orders.Query(
+		models.SelectWhere.Orders.ID.EQ(orderID),
+		// qm.InnerJoin("order_items oi ON oi.order_id=orders.id"),
+	).One(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+	return order, nil
 }
