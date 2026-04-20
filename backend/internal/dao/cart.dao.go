@@ -15,6 +15,7 @@ import (
 
 type CartDAO interface {
 	Create(ctx context.Context, userID string) (*adapters.Cart, error)
+	Delete(ctx context.Context, cartID string) (*models.Cart, error)
 	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) ([]*adapters.Cart, error)
 	GetByID(ctx context.Context, id string) (*adapters.Cart, error)
 	GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error)

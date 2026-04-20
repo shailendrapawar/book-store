@@ -13,10 +13,12 @@ import (
 
 type CartService interface {
 	create(ctx context.Context) (*adapters.Cart, error) //don't export this
+	Delete(ctx context.Context, cartID string) (*adapters.Cart, error)
 	Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (any, error)
 	Get(ctx context.Context, id string) (any, error)
 	GetByUserID(ctx context.Context, userID string) (*adapters.Cart, error)
 
+	// cart items
 	AddItemToCart(ctx context.Context, payload adapters.AddItemToCartRequest, user adapters.Claims) (any, error)
 	DeleteItemFromCart(ctx context.Context, id string, user adapters.Claims) (any, error)
 	UpdateCartItem(ctx context.Context, payload adapters.UpdateCartItemPayload, user adapters.Claims) (any, error)
@@ -47,6 +49,14 @@ func (s *cartServiceImpl) create(ctx context.Context) (*adapters.Cart, error) {
 	}
 
 	return s.cartDao.Create(ctx, user.UserID)
+}
+func (s *cartServiceImpl) Delete(ctx context.Context, cartID string) (*adapters.Cart, error) {
+	res, err := s.cartDao.Delete(ctx, cartID)
+
+	if err != nil {
+		return nil, err
+	}
+	return &adapters.Cart{ID: res.ID}, nil
 }
 
 func (s *cartServiceImpl) Search(ctx context.Context, filters adapters.CartSearchFilters, pagination adapters.PaginationRequest) (any, error) {

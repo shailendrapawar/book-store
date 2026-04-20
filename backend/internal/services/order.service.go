@@ -84,12 +84,11 @@ func (s *orderServiceImpl) Create(
 	}
 
 	// 4: TODO:clear cart of user
-	// isDeleted, err := s.cartService.DeleteItemFromCart(ctx,)
-	// isDeleted, err := s.cartItemsDao.Delete(ctx, userCart.ID)
+	_, err = s.cartService.Delete(ctx, userCart.ID)
 
-	// if err != nil || isDeleted == 0 {
-	// 	return nil, errors.New("Error while clearing cart")
-	// }
+	if err != nil {
+		return nil, errors.New("Error while clearing cart")
+	}
 
 	// merge both order details and items
 	return &adapters.Order{
