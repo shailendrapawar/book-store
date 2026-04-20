@@ -956,6 +956,31 @@ paths:
       summary: Get order by ID
       tags:
       - Orders
+  /api/v1/orders/me:
+    get:
+      consumes:
+      - application/json
+      description: Fetch all orders placed by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Orders fetched successfully
+          schema:
+            type: object
+        "400":
+          description: Failed to fetch orders
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all orders for logged-in user
+      tags:
+      - Orders
   /api/v1/users/{keyword}:
     get:
       consumes:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/shailendrapawar/book-store/internal/adapters"
 	"github.com/shailendrapawar/book-store/internal/dao"
+	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
 )
 
@@ -17,6 +18,8 @@ type OrderService interface {
 	) (*adapters.Order, error)
 
 	Get(ctx context.Context, orderID string) (*adapters.Order, error)
+
+	GetUserOrders(ctx context.Context, user *adapters.Claims) ([]*adapters.Order, error)
 }
 
 type orderServiceImpl struct {
@@ -85,7 +88,7 @@ func (s *orderServiceImpl) Create(
 		return nil, errors.New("Error while creating order items")
 	}
 
-	// 4: TODO:clear cart of user
+	// 4:clear cart of user
 	_, err = s.cartService.Delete(ctx, userCart.ID)
 
 	if err != nil {
@@ -93,29 +96,9 @@ func (s *orderServiceImpl) Create(
 	}
 
 	// merge both order details and items
-	return &adapters.Order{
-		Id:     order.ID,
-		UserId: order.UserID,
-		Status: order.Status,
-
-		DiscountValue: utils.ExtractFloat(order.DiscountValue),
-		DiscountType:  order.DiscountType,
-
-		GrossAmount: *orderGrossAmount,
-		NetAmount:   utils.ExtractFloat(order.NetAmount),
-
-		ShippingAddress: string(order.ShippingAddress.Val),
-		ShippingCity:    order.ShippingCity,
-		ShippingState:   order.ShippingState,
-		ShippingPincode: order.ShippingPincode,
-
-		PaymentMethod: order.PaymentMethod,
-		PaymentStatus: order.PaymentStatus,
-
-		CreatedAt: order.CreatedAt,
-		UpdatedAt: order.UpdatedAt,
-		Items:     orderItems,
-	}, nil
+	result := s.toAdapter(*order)
+	result.Items = orderItems
+	return result, nil
 }
 
 func (s *orderServiceImpl) getCartBooksWithPrice(ctx context.Context, userCart *adapters.Cart) ([]*adapters.Book, *float64, map[string]adapters.OrderItemMap, error) {
@@ -147,15 +130,45 @@ func (s *orderServiceImpl) getCartBooksWithPrice(ctx context.Context, userCart *
 }
 
 func (s *orderServiceImpl) Get(ctx context.Context, orderID string) (*adapters.Order, error) {
-	res, err := s.orderDao.Get(ctx, orderID)
+	order, err := s.orderDao.Get(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
 
-	orderItems, err := s.orderItemsService.Search(ctx, adapters.SearchOrderItemsFilters{OrderID: &orderID})
+	orderItems, err := s.orderItemsService.Search(ctx, adapters.SearchOrderItemsFilters{OrderID: &order.ID})
 	if err != nil {
 		return nil, err
 	}
+
+	result := s.toAdapter(*order)
+
+	//add items
+	result.Items = orderItems
+	return result, nil
+}
+
+func (s *orderServiceImpl) GetUserOrders(ctx context.Context, user *adapters.Claims) ([]*adapters.Order, error) {
+
+	filters := adapters.SearchOrderFilters{
+		UserID: &user.UserID,
+	}
+
+	orders, err := s.orderDao.Search(ctx, filters)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//traverse and map order=>adapter
+	var result []*adapters.Order
+	for _, v := range orders {
+		result = append(result, s.toAdapter(*v))
+	}
+
+	return result, nil
+}
+
+func (s *orderServiceImpl) toAdapter(res models.Order) *adapters.Order {
 
 	return &adapters.Order{
 		Id:     res.ID,
@@ -178,6 +191,5 @@ func (s *orderServiceImpl) Get(ctx context.Context, orderID string) (*adapters.O
 
 		CreatedAt: res.CreatedAt,
 		UpdatedAt: res.UpdatedAt,
-		Items:     orderItems,
-	}, nil
+	}
 }

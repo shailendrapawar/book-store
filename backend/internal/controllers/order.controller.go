@@ -14,6 +14,7 @@ import (
 type OrderController interface {
 	Create(ginContext *gin.Context)
 	Get(ginContext *gin.Context)
+	GetUserOrder(ginContext *gin.Context)
 }
 
 type orderControllerImpl struct {
@@ -98,4 +99,29 @@ func (o *orderControllerImpl) Get(ginContext *gin.Context) {
 
 	utils.HandleSuccessResponse(ginContext, 200, "Order found", res)
 
+}
+
+// GetUserOrders godoc
+// @Summary      Get all orders for logged-in user
+// @Description  Fetch all orders placed by the authenticated user
+// @Tags         Orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  object  "Orders fetched successfully"
+// @Failure      400  {object}  object  "Failed to fetch orders"
+// @Failure      401  {object}  object  "Unauthorized"
+// @Router       /api/v1/orders/me [get]
+func (c *orderControllerImpl) GetUserOrder(ginContext *gin.Context) {
+
+	reqCTX := ginContext.Request.Context()
+	user := middlewares.GetUserFromCTX(reqCTX)
+
+	res, err := c.orderService.GetUserOrders(reqCTX, user)
+	if err != nil {
+		utils.HandleErrorResponse(ginContext, 400, err.Error(), nil)
+		return
+	}
+
+	utils.HandleSuccessResponse(ginContext, 200, "Orders found", res)
 }

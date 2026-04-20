@@ -44,3 +44,7 @@ type CreateOrderPayload struct {
 	PaymentMethod string   `json:"payment_method"`
 	Currency      string   `json:"currency"`
 }
+
+type SearchOrderFilters struct {
+	UserID *string `json:"user_id"`
+}

@@ -19,4 +19,7 @@ func OrderRoutes(r *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 	orderController := controllers.NewOrderController(db, cfg)
 	orderRouter.POST("/", orderController.Create)
 	orderRouter.GET("/:id", orderController.Get)
+
+	orderRouter.GET("/me", orderController.GetUserOrder)
+
 }

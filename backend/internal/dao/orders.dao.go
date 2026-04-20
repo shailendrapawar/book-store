@@ -10,12 +10,14 @@ import (
 	"github.com/shailendrapawar/book-store/internal/db/models"
 	"github.com/shailendrapawar/book-store/internal/utils"
 	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
 	"github.com/stephenafamo/bob/types"
 )
 
 type Orders interface {
 	Create(ctx context.Context, payload *adapters.CreateOrderPayload) (*models.Order, error)
 	Get(ctx context.Context, orderID string) (*models.Order, error)
+	Search(ctx context.Context, filters adapters.SearchOrderFilters) ([]*models.Order, error)
 }
 
 type ordersDAOImpl struct {
@@ -80,4 +82,23 @@ func (d *ordersDAOImpl) Get(ctx context.Context, orderID string) (*models.Order,
 		return nil, err
 	}
 	return order, nil
+}
+
+func (d *ordersDAOImpl) Search(ctx context.Context, filters adapters.SearchOrderFilters) ([]*models.Order, error) {
+
+	query := bob.Mods[*dialect.SelectQuery]{}
+
+	if filters.UserID != nil {
+		query = append(query, models.SelectWhere.Orders.UserID.EQ(*filters.UserID))
+	}
+
+	orders, err := models.Orders.Query(
+		query...,
+	).All(ctx, d.db)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
